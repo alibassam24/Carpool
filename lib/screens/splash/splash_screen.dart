@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../routes/app_routes.dart';
-import '../onboarding/onboarding_screen.dart'; 
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -31,9 +33,21 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Timer(const Duration(seconds: 1), () {
-      Get.offAllNamed(AppRoutes.login); // change to onboarding if needed
+    Timer(const Duration(seconds: 2), () {
+      checkFirstTime();
     });
+  }
+
+  Future<void> checkFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstTime = prefs.getBool('is_first_time') ?? true;
+
+    if (isFirstTime) {
+      await prefs.setBool('is_first_time', false);
+      Get.offAllNamed(AppRoutes.onboarding);
+    } else {
+      Get.offAllNamed(AppRoutes.login);
+    }
   }
 
   @override
@@ -45,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9F6), // or Colors.white for now
+      backgroundColor: const Color(0xFFFAF9F6),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: Center(
@@ -53,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.asset(
-                'assets/images/logo1.png', // Place your logo here
+                'assets/images/logo1.png',
                 height: 150,
               ),
               const SizedBox(height: 24),
