@@ -16,25 +16,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingModel> onboardingPages = [
     OnboardingModel(
-      imageAsset: 'assets/images/onboarding1.png',
+      imageAsset: 'assets/images/onboarding2.png',
       title: 'Find rides near you',
       subtitle:
           'Discover eco-friendly carpools going your way. Save fuel, time, and the planet — together.',
     ),
     OnboardingModel(
-      imageAsset: 'assets/images/onboarding2.png',
+      imageAsset: 'assets/images/onboarding1.png',
       title: 'Connect with commuters',
       subtitle:
           'Join a trusted network of carpoolers. Build community while getting where you need to go.',
     ),
     OnboardingModel(
-      imageAsset: 'assets/images/onboarding3.png',
+      imageAsset: 'assets/images/onboarding4.png',
       title: 'Save money every trip',
       subtitle:
           'Share the ride, split the cost. Carpooling has never been this smart — or this simple.',
     ),
     OnboardingModel(
-      imageAsset: 'assets/images/onboarding4.png',
+      imageAsset: 'assets/images/onboarding3.png',
       title: 'Ready to ride?',
       subtitle: 'Let’s get you connected.',
     ),

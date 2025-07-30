@@ -1,3 +1,4 @@
+import 'package:carpool_connect/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -14,11 +15,12 @@ class CarpoolApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(  
-    initialRoute: AppRoutes.splash,
-    getPages: AppRoutes.routes,
-      title: 'Carpool Connect',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      home: OnboardingScreen(),
+   // initialRoute: AppRoutes.splash,
+   // getPages: AppRoutes.routes,
+     // title: 'Carpool Connect',
+     // debugShowCheckedModeBanner: false,
+      //theme: AppTheme.lightTheme,
     );
   }
 }
