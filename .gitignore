@@ -43,3 +43,47 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# → Flutter-specific
+build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+Generated.xcconfig
+
+# → IDEs
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+
+# → macOS
+.DS_Store
+
+# → Android
+android/.gradle/
+android/app/build/
+android/local.properties
+android/gradle.properties
+.gradle/
+
+# → iOS
+ios/Pods/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Runner.xcworkspace/
+ios/build/
+
+# → Firebase (INCLUDED for private/team repo)
+# google-services.json — keep for Android
+# GoogleService-Info.plist — keep for iOS
+
+# → Others
+.env
+*.log
+pubspec.lock
