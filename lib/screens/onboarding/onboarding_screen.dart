@@ -136,7 +136,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             _buildDots(),
             const SizedBox(height: 20),
-            if (isLast)
+            Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 40),
+  child: ElevatedButton(
+    onPressed: () {
+      if (isLast) {
+        _goToLogin();
+      } else {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF255A45),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+      ),
+      minimumSize: const Size(double.infinity, 48),
+    ),
+    child: Text(
+      isLast ? 'Get Started' : 'Next',
+      style: const TextStyle(fontSize: 16, color: Colors.white),
+    ),
+  ),
+),
+
+            /* if (isLast)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: ElevatedButton(
@@ -153,7 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
-              ),
+              ), */
             const SizedBox(height: 40),
           ],
         ),
