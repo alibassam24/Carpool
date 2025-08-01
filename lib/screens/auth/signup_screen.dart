@@ -51,20 +51,25 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  "Create Account 🚗",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF255A45),
+                Center(
+                  child: const Text(
+                    "Create Account 🚗",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF255A45),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  "Join the carpooling community and start saving!",
-                  style: TextStyle(fontSize: 16),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  children: [const Text(
+                    "Join the carpooling community and start saving!",
+                    style: TextStyle(fontSize: 16),
+                  ),],
                 ),
                 const SizedBox(height: 30),
 

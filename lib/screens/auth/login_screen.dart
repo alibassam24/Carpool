@@ -48,20 +48,27 @@ class _LoginScreenState extends State<LoginScreen> {
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Welcome Back 👋",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF255A45),
+                 children:[ Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                  children:[ const Text(
+                    "Welcome Back 👋",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF255A45),
+                    ),
                   ),
-                ),
+        
                 const SizedBox(height: 10),
+            
                 const Text(
-                  "Login to your account to continue carpooling.",
-                  style: TextStyle(fontSize: 16),
-                ),
+                    "Login to your account to continue carpooling.",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  ],
+                  ),
+                 
+                
                 const SizedBox(height: 40),
                 CustomTextField(
                   controller: emailController,

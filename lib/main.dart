@@ -1,3 +1,4 @@
+import 'package:carpool_connect/screens/auth/choose_role_screen.dart';
 import 'package:carpool_connect/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -15,11 +16,13 @@ class CarpoolApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(  
-      home: OnboardingScreen(),
+
+      //home: SplashScreen(),
+      home: ChooseRoleScreen(),
    // initialRoute: AppRoutes.splash,
    // getPages: AppRoutes.routes,
      // title: 'Carpool Connect',
-     // debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: false,
       //theme: AppTheme.lightTheme,
     );
   }
