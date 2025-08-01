@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:carpool_connect/screens/rider/rider_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -62,15 +63,29 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
     _fadeController.dispose();
     super.dispose();
   }
+   
+   void _continue() {
+  if (_selectedRole != null) {
+    if (_selectedRole == "rider") {
+      Get.to(() => const RiderHomeScreen());
+    } else if (_selectedRole == "carpooler") {
+      // Will implement next
+    }
+  }
 
+
+
+/* 
   void _continue() {
     if (_selectedRole != null) {
       // TODO: Save selected role using GetX
       // Example:
       // final authController = Get.find<AuthController>();
       // authController.setRole(_selectedRole);
+      
       Get.toNamed('/home');
     }
+     */
   }
 
   Widget _buildRoleCard({
