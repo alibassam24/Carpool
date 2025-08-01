@@ -23,6 +23,7 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
+    //_selectedRole = null;
 
     _carpoolerController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -153,6 +154,8 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
           subtitle,
           style: const TextStyle(fontSize: 14),
           textAlign: TextAlign.center,
+           //maxLines: 1,
+          //overflow: TextOverflow.ellipsis,
         ),
       ],
     ),
@@ -196,18 +199,19 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
                     Expanded(
                       child: _buildRoleCard(
                         title: "Carpooler",
-                        subtitle: "Offer rides & earn",
+                        subtitle: "Offer Rides & earn",
                         icon: Icons.drive_eta_rounded,
                         role: "carpooler",
                         controller: _carpoolerController,
                         rotation: _carpoolerRotation,
+                        
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildRoleCard(
                         title: "Rider",
-                        subtitle: "Find rides easily",
+                        subtitle: "Find rides nearby",
                         icon: Icons.person_outline,
                         role: "rider",
                         controller: _riderController,

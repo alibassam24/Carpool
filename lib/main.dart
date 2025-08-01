@@ -17,13 +17,13 @@ class CarpoolApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(  
 
-      //home: SplashScreen(),
-      home: ChooseRoleScreen(),
-   // initialRoute: AppRoutes.splash,
-   // getPages: AppRoutes.routes,
-     // title: 'Carpool Connect',
-      debugShowCheckedModeBanner: false,
-      //theme: AppTheme.lightTheme,
+   // home: ChooseRoleScreen(),
+   
+   initialRoute: AppRoutes.splash,
+    getPages: AppRoutes.routes,
+    title: 'Carpool Connect',
+    debugShowCheckedModeBanner: false,
+    theme: AppTheme.lightTheme,
     );
   }
 }

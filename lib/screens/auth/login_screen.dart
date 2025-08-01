@@ -1,3 +1,4 @@
+import 'package:carpool_connect/screens/auth/choose_role_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'signup_screen.dart';
@@ -21,21 +22,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscureText = true;
 
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        // TODO: Replace with actual login logic
-        await Future.delayed(const Duration(seconds: 2));
-        // Simulate success
-        Get.snackbar("Success", "Logged in successfully");
-        // Navigate to home
-      } catch (e) {
-        Get.snackbar("Login Failed", e.toString());
-      } finally {
-        setState(() => _isLoading = false);
-      }
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
+    try {
+      // TODO: Replace with actual login logic
+      await Future.delayed(const Duration(seconds: 2));
+
+      Get.snackbar("Success", "Logged in successfully");
+
+      // Navigate to ChooseRoleScreen
+      //Get.offAllNamed('/choose-role'); 
+       Get.to(() => const ChooseRoleScreen()); //if not using named routes
+    } catch (e) {
+      Get.snackbar("Login Failed", e.toString());
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +122,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : CustomButton(
                         text: "Login",
-                        onPressed: _login,
+                        
+                        onPressed: ()=>Get.to(()=> ChooseRoleScreen()),
                         backgroundColor: const Color(0xFF255A45),
                       ),
                 const SizedBox(height: 20),
