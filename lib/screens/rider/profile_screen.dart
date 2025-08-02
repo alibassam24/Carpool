@@ -6,130 +6,177 @@ class RiderProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Dummy values
+    final String userName = "John Doe";
+    final String email = "johndoe@example.com";
+    final int points = 240;
+    final String referralCode = "JOHN240";
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9F6), // Brand background
+      backgroundColor: const Color(0xFFFAF9F6),
       appBar: AppBar(
         title: const Text("Profile"),
-        backgroundColor: const Color(0xFF255A45), // Brand primary
+        backgroundColor: const Color(0xFF255A45),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 👤 User Info
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Color(0xFF255A45),
-                  child: Icon(Icons.person, color: Colors.white, size: 30),
-                ),
-                const SizedBox(width: 16),
-                Column(
+        children: [
+          // 👤 Profile Header
+          Row(
+            children: [
+              const CircleAvatar(
+                radius: 30,
+                backgroundColor: Color(0xFF255A45),
+                child: Icon(Icons.person, color: Colors.white, size: 30),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      "John Doe", // Replace with dynamic name
-                      style: TextStyle(
+                      userName,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF255A45),
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text("johndoe@example.com"), // Replace with dynamic email
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // ⭐ Loyalty Points Card
-            Card(
-              color: const Color(0xFFA8CABA), // Accent color
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, size: 36, color: Color(0xFF255A45)),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          "You have 240 Carpool Points",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF255A45),
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Keep riding to earn rewards!",
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 4),
+                    Text(email),
                   ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ⚙️ Options
-            const Text(
-              "Account",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF255A45),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildProfileTile(
-              icon: Icons.history,
-              label: "Ride History",
-              onTap: () {
-                // Navigate to history screen
-              },
-            ),
-            _buildProfileTile(
-              icon: Icons.settings,
-              label: "Settings",
-              onTap: () {
-                // Navigate to settings
-              },
-            ),
-            _buildProfileTile(
-              icon: Icons.support_agent,
-              label: "Help & Support",
-              onTap: () {
-                // Navigate to support
-              },
-            ),
-            const Spacer(),
-            Center(
-              child: TextButton.icon(
+              IconButton(
+                icon: const Icon(Icons.edit, color: Color(0xFF255A45)),
                 onPressed: () {
-                  // logout logic here
+                  // Navigate to edit profile
                 },
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text(
-                  "Logout",
-                  style: TextStyle(color: Colors.red),
-                ),
               ),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          // 💎 Loyalty Card
+          _buildLoyaltyCard(points),
+
+          const SizedBox(height: 20),
+
+          // 🎁 Referral Program
+          _buildReferralCard(referralCode),
+
+          const SizedBox(height: 24),
+
+          // ⚙️ Account Options
+          const Text(
+            "Account",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF255A45),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildProfileTile(
+            icon: Icons.history,
+            label: "Ride History",
+            onTap: () {},
+          ),
+          _buildProfileTile(
+            icon: Icons.settings,
+            label: "Settings",
+            onTap: () {},
+          ),
+          _buildProfileTile(
+            icon: Icons.support_agent,
+            label: "Help & Support",
+            onTap: () {},
+          ),
+
+          const SizedBox(height: 40),
+
+          // 🚪 Logout Button
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                // Add logout logic
+              },
+              icon: const Icon(Icons.logout, color: Colors.red),
+              label: const Text(
+                "Logout",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoyaltyCard(int points) {
+    return Card(
+      color: const Color(0xFFA8CABA),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(Icons.star_rounded, size: 40, color: Color(0xFF255A45)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "$points Carpool Points",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF255A45),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text("Earn more points by riding and referring."),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // View rewards or redeem
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF255A45),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              child: const Text("Redeem", style: TextStyle(color: Colors.white)),
             )
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReferralCard(String referralCode) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        tileColor: Colors.white,
+        contentPadding: const EdgeInsets.all(16),
+        leading: const Icon(Icons.card_giftcard, color: Color(0xFF255A45), size: 36),
+        title: const Text("Refer & Earn"),
+        subtitle: Text("Share your code to earn rewards.\nCode: $referralCode"),
+        trailing: ElevatedButton(
+          onPressed: () {
+            // Share referral
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF255A45),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          child: const Text("Share", style: TextStyle(color: Colors.white)),
         ),
       ),
     );
@@ -147,5 +194,6 @@ class RiderProfileScreen extends StatelessWidget {
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
+    
   }
 }
