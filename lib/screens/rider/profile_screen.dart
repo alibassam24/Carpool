@@ -161,9 +161,11 @@ class RiderProfileScreen extends StatelessWidget {
 
   Widget _buildReferralCard(String referralCode) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: const Color(0xFFA8CABA),
+     // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        tileColor: Colors.white,
+       // tileColor: Colors.white,
         contentPadding: const EdgeInsets.all(16),
         leading: const Icon(Icons.card_giftcard, color: Color(0xFF255A45), size: 36),
         title: const Text("Refer & Earn"),

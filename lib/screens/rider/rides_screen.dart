@@ -206,3 +206,5 @@ class _RidesScreenState extends State<RidesScreen> {
     );
   }
 }
+
+//theme cards dynamically
