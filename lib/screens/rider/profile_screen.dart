@@ -13,10 +13,12 @@ class RiderProfileScreen extends StatelessWidget {
     final String referralCode = "JOHN240";
 
     return Scaffold(
+      //backgroundColor:  const Color(0xFFA8CABA),
       backgroundColor: const Color(0xFFFAF9F6),
       appBar: AppBar(
-        title: const Text("Profile"),
-        backgroundColor: const Color(0xFF255A45),
+       title: const Text("Profile"),
+          backgroundColor: const Color(0xFF255A45),
+        //backgroundColor:  const Color(0xFFA8CABA),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -86,9 +88,9 @@ class RiderProfileScreen extends StatelessWidget {
             onTap: () {},
           ),
           _buildProfileTile(
-            icon: Icons.settings,
-            label: "Settings",
-            onTap: () {},
+            icon: Icons.directions_car_filled,
+            label: "Switch to Carpooler Mode",
+            onTap: () => _showSwitchRoleModal(context),
           ),
           _buildProfileTile(
             icon: Icons.support_agent,
@@ -96,6 +98,12 @@ class RiderProfileScreen extends StatelessWidget {
             onTap: () {},
           ),
 
+          _buildProfileTile(
+            icon: Icons.settings,
+            label: "Settings",
+            onTap: () {},
+          ),
+          
           const SizedBox(height: 40),
 
           // 🚪 Logout Button
@@ -115,6 +123,69 @@ class RiderProfileScreen extends StatelessWidget {
       ),
     );
   }
+  void _showSwitchRoleModal(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    backgroundColor: Colors.white,
+    isScrollControlled: true,
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.swap_horiz, color: Color(0xFF255A45), size: 36),
+            const SizedBox(height: 10),
+            const Text(
+              "Switch to Carpooler Mode?",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Color(0xFF255A45),
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              "As a carpooler, you’ll be able to post rides and accept ride requests from others.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black87),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Get.snackbar(
+                  "Role Switched",
+                  "You're now in Carpooler mode.",
+                  backgroundColor: const Color(0xFF255A45),
+                  colorText: Colors.white,
+                  icon: const Icon(Icons.check_circle, color: Colors.white),
+                );
+                // TODO: switch role logic here
+              },
+              icon: const Icon(Icons.check),
+              label: const Text("Confirm"),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFF255A45),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 
   Widget _buildLoyaltyCard(int points) {
     return Card(
