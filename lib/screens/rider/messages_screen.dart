@@ -1,4 +1,11 @@
+import 'package:carpool_connect/screens/rider/chat_screen.dart';
+import 'package:carpool_connect/services/chat_service.dart';
+import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
+import '../../services/chat_service.dart';
+import '../../services/user_service.dart';
+import 'messages_screen.dart';
+//import '../../models/user.dart'; // assuming you have a User model
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -8,64 +15,47 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  List<Map<String, dynamic>> chats = [
-    {
-      'name': 'Ali Khan',
-      'lastMessage': 'Let’s meet at 5 PM?',
-      'time': '2:30 PM',
-      'unread': 2,
-      'userType': 'Driver',
-      'status': 'online',
-      'archived': false,
-    },
-    {
-      'name': 'Sara Malik',
-      'lastMessage': 'Ride confirmed!',
-      'time': '1:12 PM',
-      'unread': 0,
-      'userType': 'Passenger',
-      'status': 'offline',
-      'archived': false,
-    },
-    {
-      'name': 'Driver Javed',
-      'lastMessage': 'I’m nearby!',
-      'time': 'Yesterday',
-      'unread': 3,
-      'userType': 'Driver',
-      'status': 'online',
-      'archived': true,
-    },
-  ];
+  List<String> chatUserIds = [];
+  Map<String, bool> archivedStatus = {}; // userId -> archived
 
-  void _deleteChat(int index) {
+  @override
+  void initState() {
+    super.initState();
+    _loadChats();
+  }
+
+  void _loadChats() {
     setState(() {
-      chats.removeAt(index);
+      chatUserIds = ChatService.getChatUsers(UserService.currentUser.id);
     });
   }
 
-  void _archiveChat(int index) {
+  void _deleteChat(String userId) {
     setState(() {
-      chats[index]['archived'] = true;
+      chatUserIds.remove(userId);
     });
   }
 
-  void _unarchiveChat(int index) {
+  void _archiveChat(String userId) {
     setState(() {
-      chats[index]['archived'] = false;
+      archivedStatus[userId] = true;
     });
   }
 
-  void _markAsRead(int index) {
+  void _unarchiveChat(String userId) {
     setState(() {
-      chats[index]['unread'] = 0;
+      archivedStatus[userId] = false;
     });
+  }
+
+  void _markAsRead(String userId) {
+    // Placeholder for real unread logic
   }
 
   @override
   Widget build(BuildContext context) {
-    final archived = chats.where((chat) => chat['archived'] == true).toList();
-    final active = chats.where((chat) => chat['archived'] == false).toList();
+    final activeChats = chatUserIds.where((id) => archivedStatus[id] != true).toList();
+    final archivedChats = chatUserIds.where((id) => archivedStatus[id] == true).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F6),
@@ -78,7 +68,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (archived.isNotEmpty)
+          if (archivedChats.isNotEmpty)
             ListTile(
               contentPadding: const EdgeInsets.only(bottom: 8),
               leading: const Icon(Icons.archive, color: Colors.grey),
@@ -94,204 +84,201 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: archived
-                            .asMap()
-                            .entries
-                            .map((entry) => _buildChatCard(entry.value, chats.indexOf(entry.value)))
-                            .toList(),
+                        children: archivedChats.map((id) => _buildChatCard(id)).toList(),
                       ),
                     );
                   },
                 );
               },
             ),
-          ...active.asMap().entries.map(
-            (entry) => _buildChatCard(entry.value, chats.indexOf(entry.value)),
-          ),
+          ...activeChats.map((id) => _buildChatCard(id)),
         ],
       ),
     );
   }
 
-  Widget _buildChatCard(Map<String, dynamic> chat, int index) {
+  Widget _buildChatCard(String userId) {
+    final user = UserService.dummyUsers.firstWhere(
+      (u) => u.id == userId,
+      orElse: () => DummyUser(
+    id: userId,
+    name: "Unknown",
+    role: "User",
+    email: "",
+    password: "",
+  ),
+    );
+
+    final messages = ChatService.getMessagesFor(UserService.currentUser.id, userId);
+    final lastMessage = messages.isNotEmpty ? messages.last.message : "(No messages)";
+    final lastTime = messages.isNotEmpty ? _formatTime(messages.last.timestamp) : "";
+
     return Card(
-      color: const Color(0xFFEAF1ED), //color 
+      color: const Color(0xFFEAF1ED),
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
-          children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: const Color(0xFF255A45),
-                  child: Text(
-                    chat['name'][0],
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: chat['status'] == 'online' ? Colors.green : Colors.grey,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                currentUserId: UserService.currentUser.id,
+                otherUserId: user.id,
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: const Color(0xFF255A45),
+                    child: Text(
+                      user.name[0],
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(chat['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(chat['time'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    chat['lastMessage'],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.black87),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    chat['userType'],
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _getOnlineStatus(user.id) ? Colors.green : Colors.grey,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Row(
-  mainAxisSize: MainAxisSize.min,
-  crossAxisAlignment: CrossAxisAlignment.center,
-  children: [
-   if (chat['unread'] > 0)
-  Container(
-    margin: const EdgeInsets.only(bottom: 6),
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: Colors.red.shade700,
-      shape: BoxShape.circle,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.red.withOpacity(0.3),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Text(
-      chat['unread'].toString(),
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-      ),
-      textAlign: TextAlign.center,
-    ),
-  ),
-    Theme(
-  data: Theme.of(context).copyWith(
-        popupMenuTheme: PopupMenuThemeData(
-      color: Color(0xFFE8F5E9), // Light green background
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),),
-      //cardColor: Color(0xFFE8F5E9),
-      //cardColor: Color(0xFFEAF1ED), 
-      //cardColor: Color(0xFFF0F0EC), // custom background color
-    iconTheme: const IconThemeData(color: Colors.black87),
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(color: Colors.black87),
-    ),
-  ),
-  child: PopupMenuButton<String>(
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    onSelected: (value) {
-      switch (value) {
-        case 'delete':
-          _deleteChat(index);
-          break;
-        case 'archive':
-          _archiveChat(index);
-          break;
-        case 'unarchive':
-          _unarchiveChat(index);
-          break;
-        case 'mark_read':
-          _markAsRead(index);
-          break;
-      }
-    },
-    itemBuilder: (context) => [
-      if (!chat['archived'])
-        const PopupMenuItem(
-          value: 'archive',
-          child: Row(
-            children: [
-              Icon(Icons.archive_outlined, size: 20),
-              SizedBox(width: 10),
-              Text('Archive'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        Text(lastTime, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      lastMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.black87),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.role,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Theme(
+                data: Theme.of(context).copyWith(
+                  popupMenuTheme: PopupMenuThemeData(
+                    color: const Color(0xFFE8F5E9),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                child: PopupMenuButton<String>(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'delete':
+                        _deleteChat(userId);
+                        break;
+                      case 'archive':
+                        _archiveChat(userId);
+                        break;
+                      case 'unarchive':
+                        _unarchiveChat(userId);
+                        break;
+                      case 'mark_read':
+                        _markAsRead(userId);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (archivedStatus[userId] != true)
+                      const PopupMenuItem(
+                        value: 'archive',
+                        child: Row(
+                          children: [
+                            Icon(Icons.archive_outlined, size: 20),
+                            SizedBox(width: 10),
+                            Text('Archive'),
+                          ],
+                        ),
+                      ),
+                    if (archivedStatus[userId] == true)
+                      const PopupMenuItem(
+                        value: 'unarchive',
+                        child: Row(
+                          children: [
+                            Icon(Icons.unarchive_outlined, size: 20),
+                            SizedBox(width: 10),
+                            Text('Unarchive'),
+                          ],
+                        ),
+                      ),
+                    const PopupMenuItem(
+                      value: 'mark_read',
+                      child: Row(
+                        children: [
+                          Icon(Icons.mark_email_read_outlined, size: 20),
+                          SizedBox(width: 10),
+                          Text('Mark as Read'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                          SizedBox(width: 10),
+                          Text('Delete'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_vert),
+                ),
+              ),
             ],
           ),
-        ),
-      if (chat['archived'])
-        const PopupMenuItem(
-          value: 'unarchive',
-          child: Row(
-            children: [
-              Icon(Icons.unarchive_outlined, size: 20),
-              SizedBox(width: 10),
-              Text('Unarchive'),
-            ],
-          ),
-        ),
-      const PopupMenuItem(
-        value: 'mark_read',
-        child: Row(
-          children: [
-            Icon(Icons.mark_email_read_outlined, size: 20),
-            SizedBox(width: 10),
-            Text('Mark as Read'),
-          ],
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'delete',
-        child: Row(
-          children: [
-            Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-            SizedBox(width: 10),
-            Text('Delete'),
-          ],
-        ),
-      ),
-    ],
-    icon: const Icon(Icons.more_vert),
-  ),
-            ),
-     ]
-),
-
-          ],
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    if (now.difference(time).inDays == 0) {
+      return "${time.hour}:${time.minute.toString().padLeft(2, '0')}";
+    } else if (now.difference(time).inDays == 1) {
+      return "Yesterday";
+    } else {
+      return "${time.day}/${time.month}";
+    }
+  }
+
+  bool _getOnlineStatus(String userId) {
+    return userId.hashCode % 2 == 0; // mock logic
   }
 }

@@ -2,7 +2,7 @@ import 'package:carpool_connect/screens/rider/chat_screen.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import '/services/chat_service.dart';
-
+import 'package:get/get.dart';
 //List<Map<String, dynamic>> chats = ChatService().getChatU();
 class RidesScreen extends StatefulWidget {
   const RidesScreen({super.key});
@@ -198,15 +198,7 @@ itemBuilder: (context, index) {
               leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
               title: Text(driverName),
               subtitle: const Text("10:30 AM • Rs 300"),
-              trailing: ElevatedButton(
-                onPressed: () {
-                  // Book ride (future logic)
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF255A45),
-                ),
-                child: const Text("Book", style: TextStyle(color: Colors.white)),
-              ),
+              
             ),
             const SizedBox(height: 8),
             Row(
@@ -214,6 +206,10 @@ itemBuilder: (context, index) {
                 ElevatedButton.icon(
                   onPressed: () {
                     try {
+                      // Ensure the chat gets added to message list
+                      final currentUserId = UserService.currentUser.id;
+                      final otherUserId = driver.id;
+                      ChatService.startChatIfNeeded(currentUserId, otherUserId);
                       Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -224,13 +220,11 @@ itemBuilder: (context, index) {
                       ),
                     );
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Chat started with $driverName")),
-                      );
+                      Get.snackbar("Success", "Chat started with $driverName");
+
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Failed to start chat: $e")),
-                      );
+                      Get.snackbar("Failed to start chat", "$e");
+
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -249,13 +243,10 @@ itemBuilder: (context, index) {
                 ElevatedButton.icon(
                   onPressed: () {
                     try {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Join request sent")),
-                      );
+                      Get.snackbar("Success", "Join request sent");
+
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Error: $e")),
-                      );
+                      Get.snackbar("Error", "$e");
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -267,7 +258,7 @@ itemBuilder: (context, index) {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   ),
                   icon: const Icon(Icons.send),
-                  label: const Text("Request"),
+                  label: const Text("Join"),
                 ),
               ],
             ),
@@ -297,3 +288,4 @@ itemBuilder: (context, index) {
 }
 
 //theme cards dynamically
+//change snackbar editing by making a global snackbar 

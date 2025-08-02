@@ -225,7 +225,7 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildRoleCard(
-                        title: "Rider",
+                        title: "Passenger",
                         subtitle: "Find rides nearby",
                         icon: Icons.person_outline,
                         role: "rider",
