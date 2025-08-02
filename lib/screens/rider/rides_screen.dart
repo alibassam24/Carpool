@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '/services/chat_service.dart';
 
+List<Map<String, dynamic>> chats = ChatService().getAllChats();
 class RidesScreen extends StatefulWidget {
   const RidesScreen({super.key});
 
@@ -166,34 +168,102 @@ class _RidesScreenState extends State<RidesScreen> {
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
           itemCount: _rides.length + (_hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index < _rides.length) {
-              return Card(
-                color: const Color(0xFFE6F2EF),
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading:
-                      const Icon(Icons.directions_car, color: Color(0xFF255A45)),
-                  title: Text(_rides[index]),
-                  subtitle: const Text("10:30 AM • Rs 300"),
-                  trailing: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF255A45),
-                    ),
-                    child: const Text("Book", style: TextStyle(color: Colors.white)),
-                  ),
+
+itemBuilder: (context, index) {
+  if (index < _rides.length) {
+    final rideTitle = _rides[index];
+    final driverName = "Driver ${index + 1}"; // Simulated driver name
+
+    return Card(
+      color: const Color(0xFFE6F2EF),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
+              title: Text(rideTitle),
+              subtitle: const Text("10:30 AM • Rs 300"),
+              trailing: ElevatedButton(
+                onPressed: () {
+                  // Book ride (future logic)
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF255A45),
                 ),
-              );
-            } else {
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-          },
+                child: const Text("Book", style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    try {
+                      ChatService().startChatWith(driverName);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Chat started with $driverName")),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Failed to start chat: $e")),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF255A45),
+                    side: const BorderSide(color: Color(0xFF255A45)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text("Chat"),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    try {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Join request sent")),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Error: $e")),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF255A45),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  icon: const Icon(Icons.send),
+                  label: const Text("Request"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  } else {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+},
+// item builder
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

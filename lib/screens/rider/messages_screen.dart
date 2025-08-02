@@ -204,35 +204,91 @@ class _MessagesScreenState extends State<MessagesScreen> {
       textAlign: TextAlign.center,
     ),
   ),
-    PopupMenuButton<String>(
-      onSelected: (value) {
-        switch (value) {
-          case 'delete':
-            _deleteChat(index);
-            break;
-          case 'archive':
-            _archiveChat(index);
-            break;
-          case 'unarchive':
-            _unarchiveChat(index);
-            break;
-          case 'mark_read':
-            _markAsRead(index);
-            break;
-        }
-      },
-      itemBuilder: (context) => [
-        if (!chat['archived'])
-          const PopupMenuItem(value: 'archive', child: Text('Archive')),
-        if (chat['archived'])
-          const PopupMenuItem(value: 'unarchive', child: Text('Unarchive')),
-        const PopupMenuItem(value: 'mark_read', child: Text('Mark as Read')),
-        const PopupMenuItem(value: 'delete', child: Text('Delete')),
-      ],
-      icon: const Icon(Icons.more_vert),
+    Theme(
+  data: Theme.of(context).copyWith(
+        popupMenuTheme: PopupMenuThemeData(
+      color: Color(0xFFE8F5E9), // Light green background
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),),
+      //cardColor: Color(0xFFE8F5E9),
+      //cardColor: Color(0xFFEAF1ED), 
+      //cardColor: Color(0xFFF0F0EC), // custom background color
+    iconTheme: const IconThemeData(color: Colors.black87),
+    textTheme: const TextTheme(
+      bodyMedium: TextStyle(color: Colors.black87),
     ),
-  ],
-)
+  ),
+  child: PopupMenuButton<String>(
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    onSelected: (value) {
+      switch (value) {
+        case 'delete':
+          _deleteChat(index);
+          break;
+        case 'archive':
+          _archiveChat(index);
+          break;
+        case 'unarchive':
+          _unarchiveChat(index);
+          break;
+        case 'mark_read':
+          _markAsRead(index);
+          break;
+      }
+    },
+    itemBuilder: (context) => [
+      if (!chat['archived'])
+        const PopupMenuItem(
+          value: 'archive',
+          child: Row(
+            children: [
+              Icon(Icons.archive_outlined, size: 20),
+              SizedBox(width: 10),
+              Text('Archive'),
+            ],
+          ),
+        ),
+      if (chat['archived'])
+        const PopupMenuItem(
+          value: 'unarchive',
+          child: Row(
+            children: [
+              Icon(Icons.unarchive_outlined, size: 20),
+              SizedBox(width: 10),
+              Text('Unarchive'),
+            ],
+          ),
+        ),
+      const PopupMenuItem(
+        value: 'mark_read',
+        child: Row(
+          children: [
+            Icon(Icons.mark_email_read_outlined, size: 20),
+            SizedBox(width: 10),
+            Text('Mark as Read'),
+          ],
+        ),
+      ),
+      const PopupMenuItem(
+        value: 'delete',
+        child: Row(
+          children: [
+            Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+            SizedBox(width: 10),
+            Text('Delete'),
+          ],
+        ),
+      ),
+    ],
+    icon: const Icon(Icons.more_vert),
+  ),
+            ),
+     ]
+),
+
           ],
         ),
       ),
