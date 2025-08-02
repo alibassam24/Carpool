@@ -1,10 +1,12 @@
 import 'package:carpool_connect/screens/auth/choose_role_screen.dart';
+import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../services/user_service.dart'; // <-- Add this import
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,26 +22,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscureText = true;
-
   void _login() async {
   if (_formKey.currentState!.validate()) {
     setState(() => _isLoading = true);
-    try {
-      // TODO: Replace with actual login logic
-      await Future.delayed(const Duration(seconds: 2));
 
-      Get.snackbar("Success", "Logged in successfully");
+    final user = UserService.authenticate(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
 
-      // Navigate to ChooseRoleScreen
-      //Get.offAllNamed('/choose-role'); 
-       Get.to(() => const ChooseRoleScreen()); //if not using named routes
-    } catch (e) {
-      Get.snackbar("Login Failed", e.toString());
-    } finally {
-      setState(() => _isLoading = false);
+    if (user != null) {
+      UserService.login(user); // sets currentUser
+      Get.snackbar("Success", "Welcome back, ${user.name}");
+      Get.to(() => const ChooseRoleScreen());
+    } else {
+      Get.snackbar("Login Failed", "Invalid credentials");
     }
+
+    setState(() => _isLoading = false);
   }
 }
+
+        /* void _login() async {
+          if (_formKey.currentState!.validate()) {
+            setState(() => _isLoading = true);
+            try {
+              await Future.delayed(const Duration(seconds: 1)); // Simulate delay
+
+              final user = UserService.authenticate(
+                emailController.text.trim(),
+                passwordController.text.trim(),
+              );
+
+              if (user != null) {
+                Get.snackbar("Success", "Welcome, ${user.name}!");
+                Get.to(() => const ChooseRoleScreen());
+              } else {
+                Get.snackbar("Login Failed", "Invalid email or password");
+              }
+            } catch (e) {
+              Get.snackbar("Error", "An unexpected error occurred");
+            } finally {
+              setState(() => _isLoading = false);
+            }
+          }
+        } */
 
   @override
   Widget build(BuildContext context) {
@@ -52,27 +79,25 @@ class _LoginScreenState extends State<LoginScreen> {
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-                 children:[ Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                  children:[ const Text(
-                    "Welcome Back 👋",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF255A45),
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: const [
+                    Text(
+                      "Welcome Back 👋",
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF255A45),
+                      ),
                     ),
-                  ),
-        
-                const SizedBox(height: 10),
-            
-                const Text(
-                    "Login to your account to continue carpooling.",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Login to your account to continue carpooling.",
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ],
-                  ),
-                 
-                
+                ),
                 const SizedBox(height: 40),
                 CustomTextField(
                   controller: emailController,
@@ -122,8 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : CustomButton(
                         text: "Login",
-                        
-                        onPressed: ()=>Get.to(()=> ChooseRoleScreen()),
+                        onPressed: _login,
                         backgroundColor: const Color(0xFF255A45),
                       ),
                 const SizedBox(height: 20),

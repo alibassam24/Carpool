@@ -1,7 +1,9 @@
+import 'package:carpool_connect/screens/rider/chat_screen.dart';
+import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import '/services/chat_service.dart';
 
-List<Map<String, dynamic>> chats = ChatService().getAllChats();
+//List<Map<String, dynamic>> chats = ChatService().getChatU();
 class RidesScreen extends StatefulWidget {
   const RidesScreen({super.key});
 
@@ -10,7 +12,8 @@ class RidesScreen extends StatefulWidget {
 }
 
 class _RidesScreenState extends State<RidesScreen> {
-  final List<String> _rides = [];
+  //final List<String> _rides = [];
+  final List<Map<String, dynamic>> _rides = [];
   bool _isLoadingMore = false;
   bool _hasMore = true;
   int _page = 1;
@@ -56,10 +59,16 @@ class _RidesScreenState extends State<RidesScreen> {
     }
 
     // 🧪 Mock ride data
-    List<String> newRides = List.generate(
-      10,
-      (index) => "Ride ${((_page - 1) * 10) + index + 1}",
-    );
+   List<Map<String, dynamic>> newRides = List.generate(
+  10,
+  (index) => {
+    'title': "Ride ${((_page - 1) * 10) + index + 1}",
+    'time': "10:30 AM",
+    'price': "Rs 300",
+    'createdBy': index % 2 == 0 ? '1' : '2', // alternating user IDs
+  },
+);
+
 
     setState(() {
       _rides.addAll(newRides);
@@ -171,9 +180,10 @@ class _RidesScreenState extends State<RidesScreen> {
 
 itemBuilder: (context, index) {
   if (index < _rides.length) {
-    final rideTitle = _rides[index];
-    final driverName = "Driver ${index + 1}"; // Simulated driver name
-
+   final ride = _rides[index];
+  final createdBy = ride['createdBy'];
+  final driver = UserService.dummyUsers.firstWhere((u) => u.id == createdBy);
+  final driverName = driver.name;
     return Card(
       color: const Color(0xFFE6F2EF),
       margin: const EdgeInsets.only(bottom: 16),
@@ -186,7 +196,7 @@ itemBuilder: (context, index) {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
-              title: Text(rideTitle),
+              title: Text(driverName),
               subtitle: const Text("10:30 AM • Rs 300"),
               trailing: ElevatedButton(
                 onPressed: () {
@@ -204,7 +214,16 @@ itemBuilder: (context, index) {
                 ElevatedButton.icon(
                   onPressed: () {
                     try {
-                      ChatService().startChatWith(driverName);
+                      Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          currentUserId: UserService.currentUser.id,
+                          otherUserId: driver.id,
+                        ),
+                      ),
+                    );
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text("Chat started with $driverName")),
                       );
