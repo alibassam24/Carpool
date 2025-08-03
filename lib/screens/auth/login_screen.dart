@@ -1,4 +1,7 @@
 import 'package:carpool_connect/screens/auth/choose_role_screen.dart';
+import 'package:carpool_connect/screens/carpooler/carpooler_home_screen.dart';
+import 'package:carpool_connect/screens/carpooler/carpooler_signup.dart';
+import 'package:carpool_connect/screens/rider/rider_home_screen.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,6 +10,10 @@ import 'forgot_password_screen.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../services/user_service.dart'; // <-- Add this import
+import 'package:get_storage/get_storage.dart';
+
+final box = GetStorage();
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,7 +39,80 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (user != null) {
+      UserService.login(user); // Set the current user
+
+      final savedRole = box.read('userRole');
+      Get.snackbar("Success", "Welcome back, ${user.name}");
+
+      if (savedRole != null) {
+        if (savedRole == 'rider') {
+          Get.offAll(() => const RiderHomeScreen());
+        } else if (savedRole == 'carpooler') {
+          if (user.role == "Carpooler") {
+            Get.offAll(() => const CarpoolerHomeScreen());
+          } else {
+            Get.offAll(() => const ExtendedCarpoolerSignupScreen());
+          }
+        }
+      } else {
+        Get.offAll(() => const ChooseRoleScreen());
+      }
+    } else {
+      Get.snackbar("Login Failed", "Invalid credentials");
+    }
+
+    setState(() => _isLoading = false);
+  }
+}
+
+  /* void _login() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
+
+    final user = UserService.authenticate(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    if (user != null) {
+      UserService.login(user); // Set the current user
+
+      final savedRole = box.read('userRole');
+      Get.snackbar("Success", "Welcome back, ${user.name}");
+
+      if (savedRole != null) {
+        if (savedRole == 'rider') {
+          Get.offAll(() => const RiderHomeScreen());
+        } else if (savedRole == 'carpooler') {
+          if (user.role == "Carpooler") {
+            Get.offAll(() => const CarpoolerHomeScreen());
+          } else {
+            Get.offAll(() => const ExtendedCarpoolerSignupScreen());
+          }
+        }
+      } else {
+        Get.offAll(() => const ChooseRoleScreen());
+      }
+    } else {
+      Get.snackbar("Login Failed", "Invalid credentials");
+    }
+
+    setState(() => _isLoading = false);
+  }
+} */
+
+  /* void _login() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
+
+    final user = UserService.authenticate(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    if (user != null) {
       UserService.login(user); // sets currentUser
+      final savedRole = box.read('userRole');
       Get.snackbar("Success", "Welcome back, ${user.name}");
       Get.to(() => const ChooseRoleScreen());
     } else {
@@ -41,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = false);
   }
-}
+} */
 
         /* void _login() async {
           if (_formKey.currentState!.validate()) {

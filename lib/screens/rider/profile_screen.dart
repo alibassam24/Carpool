@@ -176,6 +176,9 @@ class RiderProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             TextButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Color(0xFF255A45),
+              ),
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),

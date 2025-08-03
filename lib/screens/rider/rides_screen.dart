@@ -32,8 +32,54 @@ class _RidesScreenState extends State<RidesScreen> {
     _scrollController.addListener(_onScroll);
   }
 
-  /// 🧠 Loads mock rides data with pagination support
   Future<void> _loadRides({bool refresh = false}) async {
+  if (_isLoadingMore) return;
+
+  if (refresh) {
+    if (!mounted) return;
+    setState(() {
+      _page = 1;
+      _rides.clear();
+      _hasMore = true;
+    });
+  }
+
+  if (!mounted) return;
+  setState(() => _isLoadingMore = true);
+
+  await Future.delayed(const Duration(seconds: 2));
+
+  if (!mounted) return;
+
+  if (_page > 3) {
+    setState(() {
+      _hasMore = false;
+      _isLoadingMore = false;
+    });
+    return;
+  }
+
+  List<Map<String, dynamic>> newRides = List.generate(
+    10,
+    (index) => {
+      'title': "Ride ${((_page - 1) * 10) + index + 1}",
+      'time': "10:30 AM",
+      'price': "Rs 300",
+      'createdBy': index % 2 == 0 ? '1' : '2',
+    },
+  );
+
+  if (!mounted) return;
+  setState(() {
+    _rides.addAll(newRides);
+    _isLoadingMore = false;
+    _page++;
+  });
+}
+
+
+  /// 🧠 Loads mock rides data with pagination support
+/*   Future<void> _loadRides({bool refresh = false}) async {
     if (_isLoadingMore) return;
 
     if (refresh) {
@@ -75,7 +121,7 @@ class _RidesScreenState extends State<RidesScreen> {
       _isLoadingMore = false;
       _page++;
     });
-  }
+  } */
 
   /// 📦 Automatically load more rides when user scrolls near bottom
   void _onScroll() {

@@ -1,7 +1,14 @@
 import 'dart:math';
 import 'package:carpool_connect/screens/rider/rider_home_screen.dart';
+import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:carpool_connect/screens/carpooler/carpooler_home_screen.dart';
+import 'package:carpool_connect/screens/carpooler/carpooler_signup.dart';
+import 'package:get_storage/get_storage.dart';
+
+
+final box = GetStorage();
 
 class ChooseRoleScreen extends StatefulWidget {
   const ChooseRoleScreen({super.key});
@@ -66,13 +73,32 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
    
    void _continue() {
   if (_selectedRole != null) {
+    box.write('userRole', _selectedRole); // Persist role
+
+    if (_selectedRole == "rider") {
+      Get.to(() => const RiderHomeScreen());
+    } else if (_selectedRole == "carpooler") {
+      // Replace this with real check from backend or local user model
+      //final bool isAlreadyCarpooler = false; // Temporary placeholder
+       final isAlreadyCarpooler = UserService.currentUser.role.toLowerCase() == "carpooler";
+      if (isAlreadyCarpooler) {
+        Get.to(() => const CarpoolerHomeScreen());
+      } else {
+        Get.to(() => const ExtendedCarpoolerSignupScreen());
+      }
+    }
+  }
+}
+
+   /* void _continue() {
+  if (_selectedRole != null) {
     if (_selectedRole == "rider") {
       Get.to(() => const RiderHomeScreen());
     } else if (_selectedRole == "carpooler") {
       // Will implement next
     }
   }
-
+   } */
 
 
 /* 
@@ -86,7 +112,7 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> with TickerProvider
       Get.toNamed('/home');
     }
      */
-  }
+  
 
   Widget _buildRoleCard({
     required String title,

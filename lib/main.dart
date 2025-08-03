@@ -2,11 +2,13 @@ import 'package:carpool_connect/screens/auth/choose_role_screen.dart';
 import 'package:carpool_connect/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 import '../screens/splash/splash_screen.dart';
 import '../core/theme/app_theme.dart';
 import '/routes/app_routes.dart';
-void main() {
+void main() async{
+  await GetStorage.init();
   runApp(const CarpoolApp());
 }
 
