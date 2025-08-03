@@ -18,7 +18,9 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
   XFile? _cnicFrontImage;
   XFile? _cnicBackImage;
 
-  void _pickImage(Function(XFile) onImagePicked) async {
+  bool _isSubmitting = false;
+
+  Future<void> _pickImage(Function(XFile) onImagePicked) async {
     final image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       onImagePicked(image);
@@ -42,7 +44,7 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_licenseImage == null || _carNumberImage == null || _cnicFrontImage == null || _cnicBackImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('⚠️ Please upload all required documents')),
@@ -50,7 +52,32 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
       return;
     }
 
-    Navigator.pushReplacementNamed(context, '/carpooler_home');
+    setState(() => _isSubmitting = true);
+
+    // Simulate API call and admin verification (for now: always verified)
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Redirect after simulated verification
+    final bool isVerified = true; // This will later come from backend
+
+    if (isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Your documents have been verified')),
+      );
+      Navigator.pushReplacementNamed(context, '/carpooler_home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('❌ Documents not verified. Please try again.'),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: _submitForm,
+          ),
+        ),
+      );
+    }
+
+    setState(() => _isSubmitting = false);
   }
 
   Widget _uploadCard(String label, XFile? file, VoidCallback onTap) {
@@ -64,15 +91,15 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
           color: file != null ? Colors.green : const Color(0xFF255A45),
         ),
         title: Text(label),
-        subtitle: file != null
-            ? Row(
-                children: const [
-                  Text('Uploaded'),
-                  SizedBox(width: 8),
-                  Icon(Icons.remove_red_eye, color: Colors.grey),
-                ],
+        subtitle: file != null ? const Text('Uploaded') : const Text('Tap to upload'),
+        trailing: file != null
+            ? Image.file(
+                File(file.path),
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
               )
-            : const Text('Tap to upload'),
+            : null,
       ),
     );
   }
@@ -132,40 +159,48 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(primary: const Color(0xFF255A45)),
-            ),
-            child: Stepper(
-              type: StepperType.vertical,
-              currentStep: _currentStep,
-              onStepContinue: _onStepContinue,
-              onStepCancel: _onStepCancel,
-              onStepTapped: (index) => setState(() => _currentStep = index),
-              controlsBuilder: (context, details) {
-                return Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: details.onStepContinue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF255A45),
-                        foregroundColor: Colors.white,
+        padding: const EdgeInsets.all(20),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(primary: const Color(0xFF255A45)),
+          ),
+          child: Column(
+            children: [
+              Stepper(
+                type: StepperType.vertical,
+                currentStep: _currentStep,
+                onStepContinue: _isSubmitting ? null : _onStepContinue,
+                onStepCancel: _isSubmitting ? null : _onStepCancel,
+                onStepTapped: (index) => setState(() => _currentStep = index),
+                controlsBuilder: (context, details) {
+                  return Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: details.onStepContinue,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF255A45),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Text(_currentStep == _buildSteps().length - 1 ? 'Submit' : 'Next'),
                       ),
-                      child: Text(_currentStep == _buildSteps().length - 1 ? 'Finish' : 'Next'),
-                    ),
-                    const SizedBox(width: 10),
-                    if (_currentStep > 0)
-                      TextButton(
-                        onPressed: details.onStepCancel,
-                        child: const Text('Back'),
-                      ),
-                  ],
-                );
-              },
-              steps: _buildSteps(),
-            ),
+                      const SizedBox(width: 10),
+                      if (_currentStep > 0)
+                        TextButton(
+                          onPressed: details.onStepCancel,
+                          child: const Text('Back'),
+                        ),
+                    ],
+                  );
+                },
+                steps: _buildSteps(),
+              ),
+            ],
           ),
         ),
       ),
