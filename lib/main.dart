@@ -1,6 +1,7 @@
 import 'package:carpool_connect/screens/auth/choose_role_screen.dart';
 import 'package:carpool_connect/screens/carpooler/carpooler_home_screen.dart';
 import 'package:carpool_connect/screens/carpooler/carpooler_signup.dart';
+import 'package:carpool_connect/screens/carpooler/verification_pending_screen.dart';
 import 'package:carpool_connect/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,7 +22,7 @@ class CarpoolApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(  
 
-    home: CarpoolerHomeScreen(),
+    home: VerificationPendingScreen(),
    
   // initialRoute: AppRoutes.splash,
    // getPages: AppRoutes.routes,

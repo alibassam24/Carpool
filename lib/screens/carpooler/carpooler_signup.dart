@@ -1,6 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:get/get.dart';
+
+final box = GetStorage(); 
+
 
 class ExtendedCarpoolerSignupScreen extends StatefulWidget {
   const ExtendedCarpoolerSignupScreen({super.key});
@@ -43,8 +48,29 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
       setState(() => _currentStep -= 1);
     }
   }
-
   Future<void> _submitForm() async {
+  if (_licenseImage == null || _carNumberImage == null || _cnicFrontImage == null || _cnicBackImage == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('⚠️ Please upload all required documents')),
+    );
+    return;
+  }
+
+  setState(() => _isSubmitting = true);
+
+  // Simulate API call (pretend we sent data to server)
+  await Future.delayed(const Duration(seconds: 2));
+  if (!mounted) return;
+  // ✅ Save carpooler status as pending (admin will verify)
+  box.write('carpoolerStatus', 'pending');
+
+  setState(() => _isSubmitting = false);
+
+  // ✅ Redirect to "Verification Pending" screen
+  Get.offAllNamed('/verification_pending');
+}
+
+  /* Future<void> _submitForm() async {
     if (_licenseImage == null || _carNumberImage == null || _cnicFrontImage == null || _cnicBackImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('⚠️ Please upload all required documents')),
@@ -78,7 +104,7 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
     }
 
     setState(() => _isSubmitting = false);
-  }
+  } */
 
   Widget _uploadCard(String label, XFile? file, VoidCallback onTap) {
     return Card(
@@ -159,6 +185,7 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(20),
         child: Theme(
           data: Theme.of(context).copyWith(
