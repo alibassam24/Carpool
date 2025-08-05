@@ -49,6 +49,12 @@ class _ExtendedCarpoolerSignupScreenState extends State<ExtendedCarpoolerSignupS
     }
   }
   Future<void> _submitForm() async {
+    print('Submitting...');
+    print('License: ${_licenseImage?.path}');
+    print('Car Number: ${_carNumberImage?.path}');
+    print('CNIC Front: ${_cnicFrontImage?.path}');
+    print('CNIC Back: ${_cnicBackImage?.path}');
+
   if (_licenseImage == null || _carNumberImage == null || _cnicFrontImage == null || _cnicBackImage == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('⚠️ Please upload all required documents')),

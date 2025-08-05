@@ -1,12 +1,12 @@
-import 'package:carpool_connect/screens/carpooler/carpooler_signup.dart';
-import 'package:carpool_connect/screens/carpooler/verification_pending_screen.dart';
+import '../screens/carpooler/carpooler_signup.dart';
+import '../screens/carpooler/verification_pending_screen.dart';
 import 'package:get/get.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/choose_role_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
-import '../screens/carpooler/carpooler_signup.dart';
+
 import '../screens/carpooler/carpooler_home_screen.dart';
 import '../screens/rider/rider_home_screen.dart';
 
