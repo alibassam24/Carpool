@@ -6,6 +6,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/choose_role_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/carpooler/verification_rejected_screen.dart';
 
 import '../screens/carpooler/carpooler_home_screen.dart';
 import '../screens/rider/rider_home_screen.dart';
@@ -20,6 +21,8 @@ class AppRoutes {
   static const carpoolerHome = '/carpooler_home';
   static const riderHome = '/rider_home';
   static const verificationPending = '/verification_pending'; 
+  static const verificationRejected = '/verification_rejected';
+
   static final routes = [
     GetPage(name: splash, page: () => const SplashScreen()),
     GetPage(name: login, page: () => const LoginScreen()),
@@ -31,5 +34,6 @@ class AppRoutes {
     GetPage(name: riderHome, page: () => const RiderHomeScreen()),
     GetPage(name: verificationPending, page: () => const VerificationPendingScreen()),
     GetPage(name: carpoolerHome, page: () => const CarpoolerHomeScreen()),
+    GetPage(name: verificationRejected, page: () => const VerificationRejectedScreen()),
   ];
 }
