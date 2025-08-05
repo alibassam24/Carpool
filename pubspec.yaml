@@ -33,7 +33,7 @@ dependencies:
   image_picker: ^1.1.2
  # State Management & Navigation
   get: ^4.6.6
-  
+  lottie: ^2.7.0
   get_storage: ^2.1.1
   # Fonts & Icons
   google_fonts: ^6.1.0
@@ -67,6 +67,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/
+    - assets/animations/verified.json
    # - assets/images/logo2.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

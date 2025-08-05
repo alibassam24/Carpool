@@ -22,7 +22,7 @@ class CarpoolApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(  
 
-    home: ExtendedCarpoolerSignupScreen(),
+    home: VerificationPendingScreen(),
    
    // initialRoute: AppRoutes.splash,
     getPages: AppRoutes.routes,
