@@ -1,45 +1,70 @@
 // lib/services/ride_service.dart
+import 'dart:async';
+import 'package:uuid/uuid.dart';
 
 class Ride {
   final String id;
-  final String driverName;
-  final String time;
-  final double price;
-  final bool isJoined;
+  final String createdBy; // user id
+  final String origin;
+  final String destination;
+  final DateTime when;
+  final int seats;
+  final double? price;
+  final String genderPreference;
+  final String notes;
+  final DateTime createdAt;
 
   Ride({
     required this.id,
-    required this.driverName,
-    required this.time,
-    required this.price,
-    this.isJoined = false,
+    required this.createdBy,
+    required this.origin,
+    required this.destination,
+    required this.when,
+    required this.seats,
+    this.price,
+    required this.genderPreference,
+    required this.notes,
+    required this.createdAt,
   });
 }
 
 class RideService {
-  static List<Ride> dummyRides = [
-    Ride(id: 'r1', driverName: 'Ahmed Driver', time: '10:00 AM', price: 300),
-    Ride(id: 'r2', driverName: 'Sara Carpooler', time: '1:00 PM', price: 250),
-  ];
+  static final List<Ride> _rides = [];
 
-  static List<Ride> getAllRides() => dummyRides;
+  /// create a ride (simulates network delay)
+  static Future<Ride> createRide(Ride ride) async {
+    await Future.delayed(const Duration(seconds: 1)); // simulate network
+    _rides.add(ride);
+    return ride;
+  }
 
-  static bool joinRide(String rideId, String userId) {
-    try {
-      final index = dummyRides.indexWhere((r) => r.id == rideId);
-      if (index != -1) {
-        dummyRides[index] = Ride(
-          id: dummyRides[index].id,
-          driverName: dummyRides[index].driverName,
-          time: dummyRides[index].time,
-          price: dummyRides[index].price,
-          isJoined: true,
-        );
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
+  /// get list of rides (most recent first)
+  static List<Ride> getRides() {
+    return _rides.reversed.toList();
+  }
+
+  /// convenience factory for building a Ride object
+  static Ride buildRide({
+    required String createdBy,
+    required String origin,
+    required String destination,
+    required DateTime when,
+    required int seats,
+    double? price,
+    required String genderPreference,
+    required String notes,
+  }) {
+    return Ride(
+      id: const Uuid().v4(),
+      createdBy: createdBy,
+      origin: origin,
+      destination: destination,
+      when: when,
+      seats: seats,
+      price: price,
+      genderPreference: genderPreference,
+      notes: notes,
+      createdAt: DateTime.now(),
+    );
   }
 }

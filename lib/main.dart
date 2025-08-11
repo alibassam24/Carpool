@@ -22,9 +22,9 @@ class CarpoolApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(  
 
-    home: VerificationPendingScreen(),
+    //home: CarpoolerHomeScreen(),
    
-   // initialRoute: AppRoutes.splash,
+    initialRoute: AppRoutes.splash,
     getPages: AppRoutes.routes,
     title: 'Carpool Connect',
     debugShowCheckedModeBanner: false,

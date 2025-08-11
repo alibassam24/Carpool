@@ -92,7 +92,8 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
                       )
                     : ElevatedButton.icon(
                         onPressed: () {
-                          _startStatusCheck();
+                          Get.offAllNamed('/carpooler_home');
+                         // _startStatusCheck();
                           setState(() => _checking = true);
                         },
                         icon: const Icon(Icons.refresh),
