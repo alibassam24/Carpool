@@ -19,13 +19,12 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   int _currentIndex = 0;
 
   final RideController rideController = Get.put(RideController()); // 🔹 attach controller once
-
-  final List<Widget> _tabs = [
-    const HomeTab(),
-    const Center(child: Text("Chats coming soon")),
-    const Center(child: Text("Requests coming soon")),
-    const Center(child: Text("Profile coming soon")),
-  ];
+final List<Widget> _tabs = [
+  const HomeTab(),
+  const Center(child: Text("Chats coming soon")),
+  const RequestsTab(),   // ✅ now uses the real tab
+  const Center(child: Text("Profile coming soon")),
+];
 
   void _openCreateRideSheet() {
     final currentUser = UserService.currentUser;
@@ -42,7 +41,8 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
           currentUserId: currentUser.id,
           onCreated: (ride) {
             // 🔹 Now we update the GetX controller, so Obx list updates instantly
-            rideController.addRide(ride);
+           // rideController.addRide(ride);
+            debugPrint("Ride created: ${ride.origin} → ${ride.destination}");
           },
         );
       },
@@ -81,7 +81,7 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   }
 }
 
-class HomeTab extends StatelessWidget {
+/* class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   @override
@@ -115,6 +115,182 @@ class HomeTab extends StatelessWidget {
             ),
           );
         },
+      );
+    });
+  }
+} */
+
+class HomeTab extends StatelessWidget {
+  const HomeTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final RideController rideController = Get.find();
+    final currentUser = UserService.currentUser; // used for conditional UI
+
+    return Obx(() {
+      if (rideController.rides.isEmpty) {
+        return const Center(child: Text('No rides available.'));
+      }
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: rideController.rides.length,
+        itemBuilder: (context, index) {
+          final ride = rideController.rides[index];
+
+          final bool isOwner = ride.driverId == currentUser?.id; // your model uses `createdBy`
+          final bool isFull = (ride.seats ?? 0) <= 0; // safeguard if seats is nullable
+          final bool alreadyRequested = ride.requests
+              .any((r) => r.passengerId == currentUser?.id && r.status == 'pending');
+
+          Widget trailing;
+
+          if (isOwner) {
+            // Driver shouldn’t request their own ride
+            trailing = const Icon(Icons.arrow_forward_ios, size: 16);
+          } else if (currentUser == null) {
+            // Not logged in -> show disabled button prompting login
+            trailing = OutlinedButton(
+              onPressed: null,
+              child: const Text('Login to Join'),
+            );
+          } else if (isFull) {
+            trailing = OutlinedButton(
+              onPressed: null,
+              child: const Text('Full'),
+            );
+          } else if (alreadyRequested) {
+            trailing = OutlinedButton(
+              onPressed: null,
+              child: const Text('Requested'),
+            );
+          } else {
+            trailing = ElevatedButton(
+              onPressed: () {
+                // Basic: request 1 seat for now (we’ll add seat picker later)
+                final request = RideRequest(
+                  passengerId: currentUser.id,
+                  passengerName: currentUser.name,
+                  seatsRequested: 1,
+                  status: 'pending',
+                );
+
+                // Because `requests` is an RxList, this will notify dependents
+                ride.requests.add(request);
+
+                Get.snackbar(
+                  'Request sent',
+                  'Your request to join this ride has been sent.',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              child: const Text('Join'),
+            );
+          }
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+              ],
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
+              title: Text('${ride.origin} → ${ride.destination}'),
+              subtitle: Text('Seats: ${ride.seats} • Time: ${ride.when.toLocal()}'),
+              trailing: trailing,
+              onTap: () {
+                // (Optional) later we can open a Ride Details screen here
+              },
+            ),
+          );
+        },
+      );
+    });
+  }
+}
+class RequestsTab extends StatelessWidget {
+  const RequestsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final RideController rideController = Get.find<RideController>();
+
+    return Obx(() {
+      if (rideController.rides.isEmpty) {
+        return const Center(child: Text("No rides yet"));
+      }
+
+      return ListView(
+        children: rideController.rides.map((ride) {
+          if (ride.requests.isEmpty) {
+            return Card(
+              margin: const EdgeInsets.all(8),
+              child: ListTile(
+                title: Text("${ride.origin} → ${ride.destination}"),
+                subtitle: const Text("No requests yet"),
+              ),
+            );
+          }
+
+          return Card(
+            margin: const EdgeInsets.all(8),
+            child: ExpansionTile(
+              title: Text("${ride.origin} → ${ride.destination}"),
+              subtitle: Text("Requests: ${ride.requests.length}"),
+              children: ride.requests.map((req) {
+                final bool isPending = req.status == "pending";
+
+                return ListTile(
+                  title: Text(req.passengerName),
+                  subtitle: Text(
+                    "Seats requested: ${req.seatsRequested} • Status: ${req.status}",
+                  ),
+                  trailing: isPending
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Accept',
+                              icon: const Icon(Icons.check, color: Colors.green),
+                              onPressed: () {
+                                rideController.acceptRequest(ride, req);
+                                Get.snackbar('Accepted', 'Request accepted',
+                                    snackPosition: SnackPosition.BOTTOM);
+                              },
+                            ),
+                            IconButton(
+                              tooltip: 'Reject',
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              onPressed: () {
+                                rideController.rejectRequest(ride, req);
+                                Get.snackbar('Rejected', 'Request rejected',
+                                    snackPosition: SnackPosition.BOTTOM);
+                              },
+                            ),
+                          ],
+                        )
+                      : Text(
+                          req.status.toUpperCase(),
+                          style: TextStyle(
+                            color: req.status == "accepted"
+                                ? Colors.green
+                                : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                );
+              }).toList(),
+            ),
+          );
+        }).toList(),
       );
     });
   }

@@ -1,10 +1,8 @@
-// lib/widgets/create_ride_widget.dart
+import 'package:carpool_connect/models/ride_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/ride_service.dart';
-import '../services/user_service.dart';
 import '../controllers/ride_controller.dart';
-
 
 class CreateRideWidget extends StatefulWidget {
   final String currentUserId;
@@ -33,16 +31,15 @@ class _CreateRideWidgetState extends State<CreateRideWidget> with SingleTickerPr
   String _genderPref = 'No preference';
   bool _isSubmitting = false;
 
-  // small entrance animation
   late final AnimationController _animController;
   late final Animation<Offset> _offsetAnim;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
-    _offsetAnim = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _offsetAnim = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
     );
     _animController.forward();
   }
@@ -64,22 +61,44 @@ class _CreateRideWidgetState extends State<CreateRideWidget> with SingleTickerPr
       initialDate: now,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF255A45),
+            onPrimary: Colors.white,
+            onSurface: Colors.black,
+          ),
+        ),
+        child: child!,
+      ),
     );
     if (pickedDate == null) return;
 
-    final pickedTime = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF255A45),
+            onPrimary: Colors.white,
+            onSurface: Colors.black,
+          ),
+        ),
+        child: child!,
+      ),
+    );
     if (pickedTime == null) return;
 
-    final combined = DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
-
-    if (!mounted) return;
-    setState(() => _selectedDateTime = combined);
+    setState(() {
+      _selectedDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+    });
   }
 
   Future<void> _submit() async {
@@ -106,13 +125,19 @@ class _CreateRideWidgetState extends State<CreateRideWidget> with SingleTickerPr
 
       final created = await RideService.createRide(ride);
 
-// Add ride to controller list so UI updates instantly
-      rideController.addRide(created);
+      rideController.addRide(created); // 🔹 instant UI update
 
+      widget.onCreated?.call(created);
 
-      // keep Get.snackbar style consistent with your app
-      Get.snackbar('Success', 'Ride posted',
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: const Color(0xFF255A45), colorText: Colors.white);
+      Get.snackbar(
+        'Success',
+        'Ride posted',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF255A45),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
+      );
 
       Navigator.of(context).pop();
     } catch (e, st) {
@@ -124,149 +149,181 @@ class _CreateRideWidgetState extends State<CreateRideWidget> with SingleTickerPr
     }
   }
 
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: const Color(0xFF255A45)),
+      filled: true,
+      fillColor: Colors.grey[50],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final brandPrimary = const Color(0xFF255A45);
+    const brandPrimary = Color(0xFF255A45);
+
     return SlideTransition(
       position: _offsetAnim,
       child: FractionallySizedBox(
-        heightFactor: 0.86,
+        heightFactor: 0.88,
         child: Container(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            top: 16,
-          ),
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, -2)),
+            ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(height: 4, width: 40, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(4))),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Create Carpool', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _originCtl,
-                          decoration: const InputDecoration(labelText: 'Origin', prefixIcon: Icon(Icons.location_on_outlined)),
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Origin required' : null,
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: _destinationCtl,
-                          decoration: const InputDecoration(labelText: 'Destination', prefixIcon: Icon(Icons.flag_outlined)),
-                          validator: (v) => v == null || v.trim().isEmpty ? 'Destination required' : null,
-                        ),
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: _pickDateTime,
-                          child: AbsorbPointer(
-                            child: TextFormField(
-                              decoration: InputDecoration(
-                                labelText: 'Date & Time',
-                                prefixIcon: const Icon(Icons.access_time),
-                                hintText: _selectedDateTime == null ? 'Choose date & time' : _selectedDateTime!.toLocal().toString(),
-                              ),
-                            ),
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              top: 16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(height: 5, width: 50, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(5))),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Create Carpool', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: brandPrimary)),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black54),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _originCtl,
+                            decoration: _inputDecoration('Origin', Icons.location_on_outlined),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Origin required' : null,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: InputDecorator(
-                                decoration: const InputDecoration(labelText: 'Seats'),
-                                child: Row(
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        if (_seats > 1) if (mounted) setState(() => _seats--);
-                                      },
-                                      icon: const Icon(Icons.remove_circle_outline),
-                                    ),
-                                    Text('$_seats', style: const TextStyle(fontSize: 16)),
-                                    IconButton(
-                                      onPressed: () {
-                                        if (_seats < 10) if (mounted) setState(() => _seats++);
-                                      },
-                                      icon: const Icon(Icons.add_circle_outline),
-                                    ),
-                                    const Spacer(),
-                                    const Text('Max 10'),
-                                  ],
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _destinationCtl,
+                            decoration: _inputDecoration('Destination', Icons.flag_outlined),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Destination required' : null,
+                          ),
+                          const SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: _pickDateTime,
+                            child: AbsorbPointer(
+                              child: TextFormField(
+                                decoration: _inputDecoration(
+                                  'Date & Time',
+                                  Icons.access_time,
+                                ).copyWith(
+                                  hintText: _selectedDateTime == null
+                                      ? 'Choose date & time'
+                                      : '${_selectedDateTime!.toLocal()}',
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: _priceCtl,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Suggested Price (optional)', prefixIcon: Icon(Icons.attach_money)),
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButtonFormField<String>(
-                          value: _genderPref,
-                          decoration: const InputDecoration(labelText: 'Gender preference'),
-                          items: const [
-                            DropdownMenuItem(value: 'No preference', child: Text('No preference')),
-                            DropdownMenuItem(value: 'Male only', child: Text('Male only')),
-                            DropdownMenuItem(value: 'Female only', child: Text('Female only')),
-                          ],
-                          onChanged: (v) => setState(() => _genderPref = v ?? 'No preference'),
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: _notesCtl,
-                          maxLines: 3,
-                          decoration: const InputDecoration(labelText: 'Notes (optional)', hintText: 'Leave additional info'),
-                        ),
-                        const SizedBox(height: 18),
-                      ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InputDecorator(
+                                  decoration: _inputDecoration('Seats', Icons.event_seat),
+                                  child: Row(
+                                    children: [
+                                      IconButton(
+                                        onPressed: () {
+                                          if (_seats > 1) setState(() => _seats--);
+                                        },
+                                        icon: const Icon(Icons.remove_circle_outline, color: brandPrimary),
+                                      ),
+                                      Text('$_seats', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                                      IconButton(
+                                        onPressed: () {
+                                          if (_seats < 10) setState(() => _seats++);
+                                        },
+                                        icon: const Icon(Icons.add_circle_outline, color: brandPrimary),
+                                      ),
+                                      const Spacer(),
+                                      const Text('Max 10'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _priceCtl,
+                            keyboardType: TextInputType.number,
+                            decoration: _inputDecoration('Suggested Price (optional)', Icons.attach_money),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: _genderPref,
+                            decoration: _inputDecoration('Gender preference', Icons.person_outline),
+                            items: const [
+                              DropdownMenuItem(value: 'No preference', child: Text('No preference')),
+                              DropdownMenuItem(value: 'Male only', child: Text('Male only')),
+                              DropdownMenuItem(value: 'Female only', child: Text('Female only')),
+                            ],
+                            onChanged: (v) => setState(() => _genderPref = v ?? 'No preference'),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _notesCtl,
+                            maxLines: 3,
+                            decoration: _inputDecoration('Notes (optional)', Icons.note_outlined).copyWith(
+                              hintText: 'Any details for passengers',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: brandPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                // ✅ Submit Button
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isSubmitting ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 6,
+                            shadowColor: brandPrimary.withOpacity(0.4),
+                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Post Ride', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold,color: Colors.white)),
+                        ),
                       ),
-                      child: _isSubmitting
-                          ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Post Ride', style: TextStyle(fontSize: 16)),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

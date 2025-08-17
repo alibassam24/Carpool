@@ -1,32 +1,6 @@
-// lib/services/ride_service.dart
 import 'dart:async';
 import 'package:uuid/uuid.dart';
-
-class Ride {
-  final String id;
-  final String createdBy; // user id
-  final String origin;
-  final String destination;
-  final DateTime when;
-  final int seats;
-  final double? price;
-  final String genderPreference;
-  final String notes;
-  final DateTime createdAt;
-
-  Ride({
-    required this.id,
-    required this.createdBy,
-    required this.origin,
-    required this.destination,
-    required this.when,
-    required this.seats,
-    this.price,
-    required this.genderPreference,
-    required this.notes,
-    required this.createdAt,
-  });
-}
+import 'package:carpool_connect/models/ride_model.dart';
 
 class RideService {
   static final List<Ride> _rides = [];
@@ -51,20 +25,16 @@ class RideService {
     required DateTime when,
     required int seats,
     double? price,
-    required String genderPreference,
-    required String notes,
+    String genderPreference = "",
+    String notes = "",
   }) {
     return Ride(
       id: const Uuid().v4(),
-      createdBy: createdBy,
       origin: origin,
       destination: destination,
       when: when,
       seats: seats,
-      price: price,
-      genderPreference: genderPreference,
-      notes: notes,
-      createdAt: DateTime.now(),
+      driverId: createdBy,
     );
   }
 }
