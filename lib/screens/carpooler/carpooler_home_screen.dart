@@ -82,7 +82,305 @@ final List<Widget> _tabs = [
   }
 }
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
+  const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  bool showYourRides = true;
+  final RideController rideController = Get.find();
+  final currentUser = UserService.currentUser;
+
+  void toggleRides(bool showYour) {
+    setState(() {
+      showYourRides = showYour;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final rides = showYourRides
+          ? rideController.rides
+              .where((ride) => ride.driverId == currentUser?.id)
+              .toList()
+          : rideController.rides;
+
+      return Column(
+        children: [
+          const SizedBox(height: 16),
+
+          // 🔹 Segmented Toggle Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                children: [
+                  // Your Rides
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => toggleRides(true),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        decoration: BoxDecoration(
+                          color: showYourRides
+                              ? const Color(0xFF255A45)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "Your Rides",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color:
+                                showYourRides ? Colors.white : Colors.grey[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // All Rides
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => toggleRides(false),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        decoration: BoxDecoration(
+                          color: !showYourRides
+                              ? const Color(0xFF255A45)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "All Rides",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color:
+                                !showYourRides ? Colors.white : Colors.grey[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 🔹 Ride List
+          Expanded(
+            child: rides.isEmpty
+                ? Center(
+                    child: Text(
+                      showYourRides ? 'You have no rides.' : 'No rides available.',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: rides.length,
+                    itemBuilder: (context, index) {
+                      final ride = rides[index];
+                      final bool isOwner = ride.driverId == currentUser?.id;
+                      final bool isFull = (ride.seats ?? 0) <= 0;
+                      final bool alreadyRequested = ride.requests.any(
+                        (r) =>
+                            r.passengerId == currentUser?.id && r.status == 'pending',
+                      );
+
+                      Widget trailing;
+                      if (isOwner) {
+                        trailing = Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: ride.requests.map((req) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(req.passengerName),
+                                  const SizedBox(width: 6),
+                                  if (req.status == 'pending') ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.check, color: Colors.green),
+                                      onPressed: () {
+                                        rideController.respondToRequest(
+                                            ride.id, req.passengerId, true);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, color: Colors.red),
+                                      onPressed: () {
+                                        rideController.respondToRequest(
+                                            ride.id, req.passengerId, false);
+                                      },
+                                    ),
+                                  ] else ...[
+                                    Text(
+                                      req.status.capitalizeFirst ?? req.status,
+                                      style: TextStyle(
+                                        color: req.status == 'accepted'
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  ],
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      } else if (currentUser == null) {
+                        trailing = _luxButton("Login to Join", disabled: true);
+                      } else if (isFull) {
+                        trailing = _luxButton("Full", disabled: true);
+                      } else if (alreadyRequested) {
+                        trailing = _luxButton("Requested", disabled: true);
+                      } else {
+                        trailing = AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: ElevatedButton(
+                            key: ValueKey(ride.seats),
+                            onPressed: () {
+                              final request = RideRequest(
+                                passengerId: currentUser!.id,
+                                passengerName: currentUser.name,
+                                seatsRequested: 1,
+                                status: 'pending',
+                              );
+                              rideController.addRequest(ride.id, request);
+
+                              Get.snackbar(
+                                'Request Sent',
+                                'You requested to join this ride.',
+                                snackPosition: SnackPosition.BOTTOM,
+                                margin: const EdgeInsets.all(12),
+                                borderRadius: 12,
+                                backgroundColor: Colors.black87,
+                                colorText: Colors.white,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF255A45),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 22, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              elevation: 6,
+                            ),
+                            child: const Text(
+                              'Join Ride',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOut,
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 12,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          leading: CircleAvatar(
+                            radius: 26,
+                            backgroundColor:
+                                const Color(0xFF255A45).withOpacity(0.1),
+                            child: const Icon(Icons.directions_car,
+                                size: 28, color: Color(0xFF255A45)),
+                          ),
+                          title: Text(
+                            "${ride.origin} → ${ride.destination}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          subtitle: Text(
+                            "Seats left: ${ride.seats} • ${ride.when.toLocal()}",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          trailing: trailing,
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => RideDetailsModal(ride: ride),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _luxButton(String label, {bool disabled = false}) {
+    return OutlinedButton(
+      onPressed: disabled ? null : () {},
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        side: BorderSide(
+          color: disabled ? Colors.grey.shade400 : const Color(0xFF255A45),
+          width: 1.5,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: disabled ? Colors.grey.shade500 : const Color(0xFF255A45),
+        ),
+      ),
+    );
+  }
+}
+
+
+/* class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   @override
@@ -362,7 +660,7 @@ class HomeTab extends StatelessWidget {
 }
 
 
-
+ */
 /* 
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
