@@ -1,8 +1,12 @@
+import 'package:carpool_connect/controllers/ride_controller.dart';
 import 'package:carpool_connect/services/ride_service.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:carpool_connect/widgets/create_ride_widget.dart';
+import 'package:carpool_connect/models/ride_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+ // 🔹 import your GetX RideController
+ // 🔹 make sure your Ride model is accessible
 
 class CarpoolerHomeScreen extends StatefulWidget {
   const CarpoolerHomeScreen({super.key});
@@ -13,7 +17,9 @@ class CarpoolerHomeScreen extends StatefulWidget {
 
 class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   int _currentIndex = 0;
-  
+
+  final RideController rideController = Get.put(RideController()); // 🔹 attach controller once
+
   final List<Widget> _tabs = [
     const HomeTab(),
     const Center(child: Text("Chats coming soon")),
@@ -22,28 +28,27 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   ];
 
   void _openCreateRideSheet() {
-  final currentUser = UserService.currentUser;
-  if (currentUser == null) {
-  Get.snackbar('Error', 'User not logged in');
-  return; // prevent opening the sheet
+    final currentUser = UserService.currentUser;
+    if (currentUser == null) {
+      Get.snackbar('Error', 'User not logged in');
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return CreateRideWidget(
+          currentUserId: currentUser.id,
+          onCreated: (ride) {
+            // 🔹 Now we update the GetX controller, so Obx list updates instantly
+            rideController.addRide(ride);
+          },
+        );
+      },
+    );
   }
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) {
-      return CreateRideWidget(
-        currentUserId: currentUser.id,
-        onCreated: (ride) {
-          // optional: update local state, show snackbar already happens inside widget
-          setState(() {
-            // if you track a local _myRides list, insert newly created ride here
-          });
-        },
-      );
-    },
-  );
-  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,98 +81,44 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   }
 }
 
-class HomeTab extends StatefulWidget {
+class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
-  @override
-  State<HomeTab> createState() => _HomeTabState();
-}
-
-class _HomeTabState extends State<HomeTab> {
-  List<Ride> rides = [];
 
   @override
-  void initState() {
-    super.initState();
-    _loadRides();
-  }
+  Widget build(BuildContext context) {
+    final RideController rideController = Get.find();
 
-  void _loadRides() {
-    setState(() {
-      rides = RideService.getRides();
+    return Obx(() {
+      if (rideController.rides.isEmpty) {
+        return const Center(child: Text('No rides available.'));
+      }
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: rideController.rides.length,
+        itemBuilder: (context, index) {
+          final ride = rideController.rides[index];
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
+              ],
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
+              title: Text('${ride.origin} → ${ride.destination}'),
+              subtitle: Text('Seats: ${ride.seats} • Time: ${ride.when.toLocal()}'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            ),
+          );
+        },
+      );
     });
   }
-
-  @override
-  Widget build(BuildContext context) {
-    if (rides.isEmpty) {
-      return const Center(child: Text('No rides available.'));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: rides.length,
-      itemBuilder: (context, index) {
-        final ride = rides[index];
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
-            title: Text('${ride.origin} → ${ride.destination}'),
-            subtitle: Text('Seats: ${ride.seats} • Time: ${ride.when.toLocal()}'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          ),
-        );
-      },
-    );
-  }
 }
-
-
-/* class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final dummyRides = [
-      {"destination": "Downtown", "seats": 3, "time": "5:00 PM"},
-      {"destination": "Airport", "seats": 2, "time": "7:30 AM"},
-    ];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: dummyRides.length,
-      itemBuilder: (context, index) {
-        final ride = dummyRides[index];
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 6,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
-            title: Text("${ride['destination']}"),
-            subtitle: Text("Seats: ${ride['seats']} • Time: ${ride['time']}"),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          ),
-        );
-      },
-    );
-  }
-} */
 
 class CreateCarpoolForm extends StatelessWidget {
   CreateCarpoolForm({super.key});

@@ -10,8 +10,10 @@ import 'package:get_storage/get_storage.dart';
 import '../screens/splash/splash_screen.dart';
 import '../core/theme/app_theme.dart';
 import '/routes/app_routes.dart';
+import 'controllers/ride_controller.dart';
 void main() async{
   await GetStorage.init();
+  Get.put(RideController());
   runApp(const CarpoolApp());
 }
 

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/ride_service.dart';
 import '../services/user_service.dart';
+import '../controllers/ride_controller.dart';
+
 
 class CreateRideWidget extends StatefulWidget {
   final String currentUserId;
@@ -24,6 +26,7 @@ class _CreateRideWidgetState extends State<CreateRideWidget> with SingleTickerPr
   final _destinationCtl = TextEditingController();
   final _notesCtl = TextEditingController();
   final _priceCtl = TextEditingController();
+  final RideController rideController = Get.find<RideController>();
 
   DateTime? _selectedDateTime;
   int _seats = 1;
@@ -103,8 +106,9 @@ class _CreateRideWidgetState extends State<CreateRideWidget> with SingleTickerPr
 
       final created = await RideService.createRide(ride);
 
-      if (!mounted) return;
-      widget.onCreated?.call(created);
+// Add ride to controller list so UI updates instantly
+      rideController.addRide(created);
+
 
       // keep Get.snackbar style consistent with your app
       Get.snackbar('Success', 'Ride posted',
