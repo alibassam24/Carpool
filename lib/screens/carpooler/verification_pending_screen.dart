@@ -23,6 +23,11 @@ class _VerificationPendingScreenState extends State<VerificationPendingScreen> {
   void _startStatusCheck() {
     Timer.periodic(const Duration(seconds: 10), (timer) async {
       bool isVerified = await mockVerifyStatus();
+      if (!mounted) {
+      timer.cancel(); // stop the timer if widget is gone
+      return;
+    }
+
       if (isVerified) {
         timer.cancel();
         setState(() => _isVerified = true);

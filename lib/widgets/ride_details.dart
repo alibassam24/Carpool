@@ -75,7 +75,7 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                           // HEADER: Origin → Destination
                           Row(
                             children: [
-                              const Icon(Icons.directions_car, size: 30, color: Color(0xFF1E3A8A)),
+                              const Icon(Icons.directions_car, size: 30, color: Color(0xFF255A45)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -83,7 +83,7 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                                   style: const TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E3A8A),
+                                    color: Color(0xFF255A45),
                                   ),
                                 ),
                               ),
@@ -212,7 +212,7 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1E3A8A),
+                                  backgroundColor: const Color(0xFF255A45),
                                   padding: const EdgeInsets.symmetric(vertical: 18),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(28),
