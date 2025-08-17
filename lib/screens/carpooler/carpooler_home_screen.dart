@@ -3,6 +3,7 @@ import 'package:carpool_connect/services/ride_service.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:carpool_connect/widgets/create_ride_widget.dart';
 import 'package:carpool_connect/models/ride_model.dart';
+import 'package:carpool_connect/widgets/ride_details.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
  // 🔹 import your GetX RideController
@@ -120,94 +121,172 @@ final List<Widget> _tabs = [
   }
 } */
 
-class HomeTab extends StatelessWidget {
+/* class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
 
   @override
   Widget build(BuildContext context) {
     final RideController rideController = Get.find();
-    final currentUser = UserService.currentUser; // used for conditional UI
+    final currentUser = UserService.currentUser;
 
     return Obx(() {
       if (rideController.rides.isEmpty) {
-        return const Center(child: Text('No rides available.'));
+        return const Center(
+          child: Text(
+            'No rides available.',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        );
       }
+
       return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: rideController.rides.length,
         itemBuilder: (context, index) {
           final ride = rideController.rides[index];
 
-          final bool isOwner = ride.driverId == currentUser?.id; // your model uses `createdBy`
-          final bool isFull = (ride.seats ?? 0) <= 0; // safeguard if seats is nullable
-          final bool alreadyRequested = ride.requests
-              .any((r) => r.passengerId == currentUser?.id && r.status == 'pending');
+          final bool isOwner = ride.driverId == currentUser?.id;
+          final bool isFull = (ride.seats ?? 0) <= 0;
+          final bool alreadyRequested = ride.requests.any(
+            (r) => r.passengerId == currentUser?.id && r.status == 'pending',
+          );
 
           Widget trailing;
 
           if (isOwner) {
-            // Driver shouldn’t request their own ride
-            trailing = const Icon(Icons.arrow_forward_ios, size: 16);
-          } else if (currentUser == null) {
-            // Not logged in -> show disabled button prompting login
-            trailing = OutlinedButton(
-              onPressed: null,
-              child: const Text('Login to Join'),
-            );
-          } else if (isFull) {
-            trailing = OutlinedButton(
-              onPressed: null,
-              child: const Text('Full'),
-            );
-          } else if (alreadyRequested) {
-            trailing = OutlinedButton(
-              onPressed: null,
-              child: const Text('Requested'),
-            );
-          } else {
-            trailing = ElevatedButton(
-              onPressed: () {
-                // Basic: request 1 seat for now (we’ll add seat picker later)
-                final request = RideRequest(
-                  passengerId: currentUser.id,
-                  passengerName: currentUser.name,
-                  seatsRequested: 1,
-                  status: 'pending',
-                );
-
-                // Because `requests` is an RxList, this will notify dependents
-                ride.requests.add(request);
-
-                Get.snackbar(
-                  'Request sent',
-                  'Your request to join this ride has been sent.',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  trailing = Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.end,
+    children: ride.requests.map((req) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(req.passengerName),
+            const SizedBox(width: 6),
+            if (req.status == 'pending') ...[
+              IconButton(
+                icon: const Icon(Icons.check, color: Colors.green),
+                onPressed: () {
+                  rideController.respondToRequest(
+                      ride.id, req.passengerId, true);
+                },
               ),
-              child: const Text('Join'),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.red),
+                onPressed: () {
+                  rideController.respondToRequest(
+                      ride.id, req.passengerId, false);
+                },
+              ),
+            ] else ...[
+              Text(
+                req.status.capitalizeFirst ?? req.status,
+                style: TextStyle(
+                  color: req.status == 'accepted' ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            ],
+          ],
+        ),
+      );
+    }).toList(),
+  );
+} else if (currentUser == null) {
+            trailing = _luxButton("Login to Join", disabled: true);
+          } else if (isFull) {
+            trailing = _luxButton("Full", disabled: true);
+          } else if (alreadyRequested) {
+            trailing = _luxButton("Requested", disabled: true);
+          } else {
+            trailing = AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: ElevatedButton(
+                key: ValueKey(ride.seats), // 🔑 animate on seats change
+                onPressed: () {
+                  final request = RideRequest(
+                    passengerId: currentUser.id,
+                    passengerName: currentUser.name,
+                    seatsRequested: 1,
+                    status: 'pending',
+                  );
+
+                  ride.requests.add(request);
+                  rideController.rides.refresh();
+
+                  Get.snackbar(
+                    'Request Sent',
+                    'You requested to join this ride.',
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: const EdgeInsets.all(12),
+                    borderRadius: 12,
+                    backgroundColor: Colors.black87,
+                    colorText: Colors.white,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3A8A), // deep blue brand color
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  elevation: 6,
+                ),
+                child: const Text(
+                  'Join Ride',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             );
           }
 
           return AnimatedContainer(
             duration: const Duration(milliseconds: 400),
-            margin: const EdgeInsets.only(bottom: 12),
+            curve: Curves.easeOut,
+            margin: const EdgeInsets.only(bottom: 14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
               ],
             ),
             child: ListTile(
-              leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
-              title: Text('${ride.origin} → ${ride.destination}'),
-              subtitle: Text('Seats: ${ride.seats} • Time: ${ride.when.toLocal()}'),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              leading: CircleAvatar(
+                radius: 26,
+                backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
+                child: const Icon(Icons.directions_car,
+                    size: 28, color: Color(0xFF1E3A8A)),
+              ),
+              title: Text(
+                "${ride.origin} → ${ride.destination}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Text(
+                "Seats left: ${ride.seats} • ${ride.when.toLocal()}",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              ),
               trailing: trailing,
               onTap: () {
-                // (Optional) later we can open a Ride Details screen here
+                // later: open ride details modal
               },
             ),
           );
@@ -215,8 +294,239 @@ class HomeTab extends StatelessWidget {
       );
     });
   }
+
+  /// 🔹 Luxury minimalist button widget
+  Widget _luxButton(String label, {bool disabled = false}) {
+    return OutlinedButton(
+      onPressed: disabled ? null : () {},
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        side: BorderSide(
+          color: disabled ? Colors.grey.shade400 : const Color(0xFF1E3A8A),
+          width: 1.5,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: disabled ? Colors.grey.shade500 : const Color(0xFF1E3A8A),
+        ),
+      ),
+    );
+  }
+} */
+class HomeTab extends StatelessWidget {
+  const HomeTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final RideController rideController = Get.find();
+    final currentUser = UserService.currentUser;
+
+    return Obx(() {
+      if (rideController.rides.isEmpty) {
+        return const Center(
+          child: Text(
+            'No rides available.',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: rideController.rides.length,
+        itemBuilder: (context, index) {
+          final ride = rideController.rides[index];
+
+          final bool isOwner = ride.driverId == currentUser?.id;
+          final bool isFull = (ride.seats ?? 0) <= 0;
+          final bool alreadyRequested = ride.requests.any(
+            (r) => r.passengerId == currentUser?.id && r.status == 'pending',
+          );
+
+          Widget trailing;
+
+          if (isOwner) {
+            trailing = Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: ride.requests.map((req) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(req.passengerName),
+                      const SizedBox(width: 6),
+                      if (req.status == 'pending') ...[
+                        IconButton(
+                          icon: const Icon(Icons.check, color: Colors.green),
+                          onPressed: () {
+                            rideController.respondToRequest(
+                                ride.id, req.passengerId, true);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: () {
+                            rideController.respondToRequest(
+                                ride.id, req.passengerId, false);
+                          },
+                        ),
+                      ] else ...[
+                        Text(
+                          req.status.capitalizeFirst ?? req.status,
+                          style: TextStyle(
+                            color: req.status == 'accepted'
+                                ? Colors.green
+                                : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      ],
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          } else if (currentUser == null) {
+            trailing = _luxButton("Login to Join", disabled: true);
+          } else if (isFull) {
+            trailing = _luxButton("Full", disabled: true);
+          } else if (alreadyRequested) {
+            trailing = _luxButton("Requested", disabled: true);
+          } else {
+            trailing = AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: ElevatedButton(
+                key: ValueKey(ride.seats), // animate on seats change
+                onPressed: () {
+                  final request = RideRequest(
+                    passengerId: currentUser.id,
+                    passengerName: currentUser.name,
+                    seatsRequested: 1,
+                    status: 'pending',
+                  );
+
+                  rideController.addRequest(ride.id, request);
+
+                  Get.snackbar(
+                    'Request Sent',
+                    'You requested to join this ride.',
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: const EdgeInsets.all(12),
+                    borderRadius: 12,
+                    backgroundColor: Colors.black87,
+                    colorText: Colors.white,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3A8A),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  elevation: 6,
+                ),
+                child: const Text(
+                  'Join Ride',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              leading: CircleAvatar(
+                radius: 26,
+                backgroundColor: const Color(0xFF1E3A8A).withOpacity(0.1),
+                child: const Icon(Icons.directions_car,
+                    size: 28, color: Color(0xFF1E3A8A)),
+              ),
+              title: Text(
+                "${ride.origin} → ${ride.destination}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Text(
+                "Seats left: ${ride.seats} • ${ride.when.toLocal()}",
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              trailing: trailing,
+              onTap: () {
+                 showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => RideDetailsModal(ride: ride),
+  );
+              },
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  Widget _luxButton(String label, {bool disabled = false}) {
+    return OutlinedButton(
+      onPressed: disabled ? null : () {},
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        side: BorderSide(
+          color: disabled ? Colors.grey.shade400 : const Color(0xFF1E3A8A),
+          width: 1.5,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: disabled ? Colors.grey.shade500 : const Color(0xFF1E3A8A),
+        ),
+      ),
+    );
+  }
 }
-class RequestsTab extends StatelessWidget {
+
+/* lass RequestsTab extends StatelessWidget {
   const RequestsTab({super.key});
 
   @override
@@ -261,7 +571,7 @@ class RequestsTab extends StatelessWidget {
                               tooltip: 'Accept',
                               icon: const Icon(Icons.check, color: Colors.green),
                               onPressed: () {
-                                rideController.acceptRequest(ride, req);
+                                rideController.acceptRequest(ride.id, req.passengerId);
                                 Get.snackbar('Accepted', 'Request accepted',
                                     snackPosition: SnackPosition.BOTTOM);
                               },
@@ -270,7 +580,7 @@ class RequestsTab extends StatelessWidget {
                               tooltip: 'Reject',
                               icon: const Icon(Icons.close, color: Colors.red),
                               onPressed: () {
-                                rideController.rejectRequest(ride, req);
+                                rideController.rejectRequest(ride.id, req.passengerId);
                                 Get.snackbar('Rejected', 'Request rejected',
                                     snackPosition: SnackPosition.BOTTOM);
                               },
@@ -295,6 +605,84 @@ class RequestsTab extends StatelessWidget {
     });
   }
 }
+ */
+class RequestsTab extends StatelessWidget {
+  const RequestsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final RideController rideController = Get.find<RideController>();
+
+    return Obx(() {
+      if (rideController.rides.isEmpty) {
+        return const Center(child: Text("No rides yet"));
+      }
+
+      return ListView(
+        children: rideController.rides.map((ride) {
+          if (ride.requests.isEmpty) {
+            return Card(
+              margin: const EdgeInsets.all(8),
+              child: ListTile(
+                title: Text("${ride.origin} → ${ride.destination}"),
+                subtitle: const Text("No requests yet"),
+              ),
+            );
+          }
+
+          return Card(
+            margin: const EdgeInsets.all(8),
+            child: ExpansionTile(
+              title: Text("${ride.origin} → ${ride.destination}"),
+              subtitle: Text("Requests: ${ride.requests.length}"),
+              children: ride.requests.map((req) {
+                final bool isPending = req.status == "pending";
+
+                return ListTile(
+                  title: Text(req.passengerName),
+                  subtitle: Text(
+                      "Seats requested: ${req.seatsRequested} • Status: ${req.status}"),
+                  trailing: isPending
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Accept',
+                              icon: const Icon(Icons.check, color: Colors.green),
+                              onPressed: () {
+                                rideController.respondToRequest(
+                                    ride.id, req.passengerId, true);
+                              },
+                            ),
+                            IconButton(
+                              tooltip: 'Reject',
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              onPressed: () {
+                                rideController.respondToRequest(
+                                    ride.id, req.passengerId, false);
+                              },
+                            ),
+                          ],
+                        )
+                      : Text(
+                          req.status.toUpperCase(),
+                          style: TextStyle(
+                            color: req.status == "accepted"
+                                ? Colors.green
+                                : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                );
+              }).toList(),
+            ),
+          );
+        }).toList(),
+      );
+    });
+  }
+}
+
 
 class CreateCarpoolForm extends StatelessWidget {
   CreateCarpoolForm({super.key});

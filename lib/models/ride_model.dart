@@ -7,7 +7,7 @@ class Ride {
   int seats; // make mutable so seats can be decremented
   final DateTime when;
   final String driverId;
-
+  String genderPreference; 
   // 🔹 Requests list
   final RxList<RideRequest> requests = <RideRequest>[].obs;
 
@@ -18,7 +18,14 @@ class Ride {
     required this.seats,
     required this.when,
     required this.driverId,
+    this.genderPreference="Any",
   });
+
+  void decrementSeat(int count) {
+  if (seats - count >= 0) {
+    seats -= count; // reduce seats
+  }
+}
 }
 
 class RideRequest {
@@ -49,3 +56,6 @@ class RideRequest {
     );
   }
 }
+
+
+
