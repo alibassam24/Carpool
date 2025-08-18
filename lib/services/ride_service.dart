@@ -18,7 +18,7 @@ class RideService {
   }
 
   /// convenience factory for building a Ride object
-  static Ride buildRide({
+  /* static Ride buildRide({
     required String createdBy,
     required String origin,
     required String destination,
@@ -36,5 +36,28 @@ class RideService {
       seats: seats,
       driverId: createdBy,
     );
-  }
+  } */
+ static Ride buildRide({
+  required String createdBy,
+  required String origin,
+  required String destination,
+  required DateTime when,
+  required int seats,
+  double? price,
+  String genderPreference = "Any",
+  String notes = "",
+  List<RideRequest>? requests, // optional initial requests
+}) {
+  return Ride(
+    id: const Uuid().v4(),
+    origin: origin,
+    destination: destination,
+    seats: seats,
+    when: when,
+    driverId: createdBy,
+    genderPreference: genderPreference,
+    requests: requests ?? [], // initialize as empty list if null
+  );
+}
+
 }

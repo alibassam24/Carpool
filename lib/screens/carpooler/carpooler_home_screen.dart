@@ -6,6 +6,7 @@ import 'package:carpool_connect/models/ride_model.dart';
 import 'package:carpool_connect/widgets/ride_details.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../widgets/ride_card.dart';
 import 'package:carpool_connect/tabs/requests_tab.dart';
  // 🔹 import your GetX RideController
  // 🔹 make sure your Ride model is accessible
@@ -194,160 +195,20 @@ class _HomeTabState extends State<HomeTab> {
                     padding: const EdgeInsets.all(16),
                     itemCount: rides.length,
                     itemBuilder: (context, index) {
-                      final ride = rides[index];
-                      final bool isOwner = ride.driverId == currentUser?.id;
-                      final bool isFull = (ride.seats ?? 0) <= 0;
-                      final bool alreadyRequested = ride.requests.any(
-                        (r) =>
-                            r.passengerId == currentUser?.id && r.status == 'pending',
-                      );
+                    final ride = rides[index];
+                    return RideCard(
+                    ride: ride,
+                    onTap: () {
+                    showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => RideDetailsModal(ride: ride),
+                  );
+                },
+              );
+            },
 
-                      Widget trailing;
-                      if (isOwner) {
-                        trailing = Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: ride.requests.map((req) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(req.passengerName),
-                                  const SizedBox(width: 6),
-                                  if (req.status == 'pending') ...[
-                                    IconButton(
-                                      icon: const Icon(Icons.check, color: Colors.green),
-                                      onPressed: () {
-                                        rideController.respondToRequest(
-                                            ride.id, req.passengerId, true);
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.red),
-                                      onPressed: () {
-                                        rideController.respondToRequest(
-                                            ride.id, req.passengerId, false);
-                                      },
-                                    ),
-                                  ] else ...[
-                                    Text(
-                                      req.status.capitalizeFirst ?? req.status,
-                                      style: TextStyle(
-                                        color: req.status == 'accepted'
-                                            ? Colors.green
-                                            : Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                  ],
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      } else if (currentUser == null) {
-                        trailing = _luxButton("Login to Join", disabled: true);
-                      } else if (isFull) {
-                        trailing = _luxButton("Full", disabled: true);
-                      } else if (alreadyRequested) {
-                        trailing = _luxButton("Requested", disabled: true);
-                      } else {
-                        trailing = AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: ElevatedButton(
-                            key: ValueKey(ride.seats),
-                            onPressed: () {
-                              final request = RideRequest(
-                                passengerId: currentUser!.id,
-                                passengerName: currentUser.name,
-                                seatsRequested: 1,
-                                status: 'pending',
-                              );
-                              rideController.addRequest(ride.id, request);
-
-                              Get.snackbar(
-                                'Request Sent',
-                                'You requested to join this ride.',
-                                snackPosition: SnackPosition.BOTTOM,
-                                margin: const EdgeInsets.all(12),
-                                borderRadius: 12,
-                                backgroundColor: Colors.black87,
-                                colorText: Colors.white,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF255A45),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 22, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              elevation: 6,
-                            ),
-                            child: const Text(
-                              'Join Ride',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeOut,
-                        margin: const EdgeInsets.only(bottom: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          leading: CircleAvatar(
-                            radius: 26,
-                            backgroundColor:
-                                const Color(0xFF255A45).withOpacity(0.1),
-                            child: const Icon(Icons.directions_car,
-                                size: 28, color: Color(0xFF255A45)),
-                          ),
-                          title: Text(
-                            "${ride.origin} → ${ride.destination}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Text(
-                            "Seats left: ${ride.seats} • ${ride.when.toLocal()}",
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          trailing: trailing,
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) => RideDetailsModal(ride: ride),
-                            );
-                          },
-                        ),
-                      );
-                    },
                   ),
           ),
         ],
