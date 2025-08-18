@@ -6,6 +6,7 @@ import 'package:carpool_connect/models/ride_model.dart';
 import 'package:carpool_connect/widgets/ride_details.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:carpool_connect/tabs/requests_tab.dart';
  // 🔹 import your GetX RideController
  // 🔹 make sure your Ride model is accessible
 
@@ -948,7 +949,7 @@ class HomeTab extends StatelessWidget {
   }
 }
  */
-class RequestsTab extends StatelessWidget {
+/* class RequestsTab extends StatelessWidget {
   const RequestsTab({super.key});
 
   @override
@@ -1025,7 +1026,7 @@ class RequestsTab extends StatelessWidget {
   }
 }
 
-
+ */
 class CreateCarpoolForm extends StatelessWidget {
   CreateCarpoolForm({super.key});
 
