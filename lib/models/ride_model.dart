@@ -9,7 +9,7 @@ class Ride {
   final String driverId;
   String genderPreference; 
   // 🔹 Requests list
-  final RxList<RideRequest> requests = <RideRequest>[].obs;
+  RxList<RideRequest> requests;
 
   Ride({
     required this.id,
@@ -19,7 +19,8 @@ class Ride {
     required this.when,
     required this.driverId,
     this.genderPreference="Any",
-  });
+    List<RideRequest>? requests,
+  }): requests = (requests ?? <RideRequest>[]).obs;
 
   void decrementSeat(int count) {
   if (seats - count >= 0) {
@@ -33,12 +34,14 @@ class RideRequest {
   final String passengerName;
   final int seatsRequested;
   final String status; // pending, accepted, rejected
+  
 
   RideRequest({
     required this.passengerId,
     required this.passengerName,
     required this.seatsRequested,
     this.status = "pending",
+   
   });
 
   // 👇 Utility to clone with new values

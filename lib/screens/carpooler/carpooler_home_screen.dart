@@ -21,7 +21,7 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   int _currentIndex = 0;
 
   final RideController rideController = Get.put(RideController()); // 🔹 attach controller once
-final List<Widget> _tabs = [
+  final List<Widget> _tabs = [
   const HomeTab(),
   const Center(child: Text("Chats coming soon")),
   const RequestsTab(),   // ✅ now uses the real tab

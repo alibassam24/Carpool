@@ -1,9 +1,26 @@
+import 'package:carpool_connect/services/user_service.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:carpool_connect/models/ride_model.dart';
-
+import 'package:carpool_connect/services/mock_data.dart';
 class RideController extends GetxController {
   var rides = <Ride>[].obs;
 
+ @override
+  void onInit() {
+    super.onInit();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+    rides.assignAll(MockData.generateMockRides());
+  });
+    //   Future.delayed(Duration(milliseconds: 100), () {
+    //   rides.assignAll(MockData.generateMockRides());
+    // });
+   //  rides.assignAll(MockData.generateMockRides());
+    // Load mock rides initially
+   // Future.microtask(() {
+  //  rides.assignAll(MockData.generateMockRides());
+  //});
+  }
   // 🔹 Add a new ride
   void addRide(Ride ride) {
     rides.insert(0, ride); // newest first

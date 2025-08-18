@@ -3,6 +3,7 @@ import 'package:carpool_connect/screens/carpooler/carpooler_home_screen.dart';
 import 'package:carpool_connect/screens/carpooler/carpooler_signup.dart';
 import 'package:carpool_connect/screens/carpooler/verification_pending_screen.dart';
 import 'package:carpool_connect/screens/onboarding/onboarding_screen.dart';
+import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -14,6 +15,8 @@ import 'controllers/ride_controller.dart';
 void main() async{
   await GetStorage.init();
   Get.put(RideController());
+   WidgetsFlutterBinding.ensureInitialized();
+  UserService.setTestUser();
   runApp(const CarpoolApp());
 }
 

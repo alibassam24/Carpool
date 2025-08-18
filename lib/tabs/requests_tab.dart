@@ -11,10 +11,11 @@ class RequestsTab extends StatefulWidget {
   State<RequestsTab> createState() => _RequestsTabState();
 }
 
-class _RequestsTabState extends State<RequestsTab> {
+class _RequestsTabState extends State<RequestsTab> with SingleTickerProviderStateMixin {
   final RideController rideController = Get.find<RideController>();
   final TextEditingController _searchController = TextEditingController();
   String _filterStatus = 'All';
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +33,6 @@ class _RequestsTabState extends State<RequestsTab> {
           if (_searchController.text.isNotEmpty &&
               !req.passengerName.toLowerCase().contains(_searchController.text.toLowerCase()))
             continue;
-
           allRequests.add(_RequestItem(ride: ride, request: req));
         }
       }
@@ -41,7 +41,7 @@ class _RequestsTabState extends State<RequestsTab> {
         onRefresh: () async => rideController.rides.refresh(),
         child: Column(
           children: [
-            // Search bar
+            // Search Bar
             Padding(
               padding: const EdgeInsets.all(12),
               child: TextField(
@@ -56,7 +56,7 @@ class _RequestsTabState extends State<RequestsTab> {
                 ),
               ),
             ),
-            // Filter buttons
+            // Status Filters
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
@@ -77,74 +77,25 @@ class _RequestsTabState extends State<RequestsTab> {
               ),
             ),
             const SizedBox(height: 8),
-            // Requests list
+            // Requests List
             Expanded(
               child: allRequests.isEmpty
-                  ? const Center(child: Text("No requests found"))
+                  ? const Center(
+                      child: Text(
+                        "No requests found",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                    )
                   : ListView.builder(
+                      key: _listKey,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       itemCount: allRequests.length,
                       itemBuilder: (context, index) {
                         final item = allRequests[index];
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeInOut,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            title: Text(
-                              "${item.ride.origin} → ${item.ride.destination}",
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text("Passenger: ${item.request.passengerName}",
-                                    style: const TextStyle(fontWeight: FontWeight.w500)),
-                                Text("Seats requested: ${item.request.seatsRequested}",
-                                    style: const TextStyle(color: Colors.grey)),
-                                const SizedBox(height: 4),
-                                _statusBadge(item.request.status),
-                              ],
-                            ),
-                            trailing: item.request.status == "pending"
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.check, color: Colors.green),
-                                        tooltip: "Accept",
-                                        onPressed: () {
-                                          rideController.respondToRequest(
-                                              item.ride.id, item.request.passengerId, true);
-                                          _highlightRequest(context);
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.close, color: Colors.red),
-                                        tooltip: "Reject",
-                                        onPressed: () {
-                                          rideController.respondToRequest(
-                                              item.ride.id, item.request.passengerId, false);
-                                          _highlightRequest(context);
-                                        },
-                                      ),
-                                    ],
-                                  )
-                                : null,
-                          ),
+                        return _AnimatedRequestCard(
+                          key: ValueKey("${item.ride.id}-${item.request.passengerId}"),
+                          item: item,
+                          onUpdate: () => _highlightRequest(context),
                         );
                       },
                     ),
@@ -153,6 +104,123 @@ class _RequestsTabState extends State<RequestsTab> {
         ),
       );
     });
+  }
+
+  void _highlightRequest(BuildContext context) {
+    final snack = SnackBar(
+      content: const Text("Request updated"),
+      duration: const Duration(seconds: 1),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: const Color(0xFF1ABC4A),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snack);
+  }
+}
+
+class _AnimatedRequestCard extends StatefulWidget {
+  final _RequestItem item;
+  final VoidCallback onUpdate;
+
+  const _AnimatedRequestCard({super.key, required this.item, required this.onUpdate});
+
+  @override
+  State<_AnimatedRequestCard> createState() => _AnimatedRequestCardState();
+}
+
+class _AnimatedRequestCardState extends State<_AnimatedRequestCard> with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scaleAnim = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _fadeAnim = Tween<double>(begin: 0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final RideController rideController = Get.find();
+    final item = widget.item;
+
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: FadeTransition(
+        opacity: _fadeAnim,
+        child: Card(
+          elevation: 4,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ExpansionTile(
+            key: PageStorageKey("${item.ride.id}-${item.request.passengerId}"),
+            onExpansionChanged: (val) => setState(() => _expanded = val),
+            title: Text(
+              "${item.ride.origin} → ${item.ride.destination}",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Text("Passenger: ${item.request.passengerName}"),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Seats requested: ${item.request.seatsRequested}",
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                    const SizedBox(height: 6),
+                    _statusBadge(item.request.status),
+                    const SizedBox(height: 8),
+                    if (item.request.status == "pending")
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.check, color: Colors.green),
+                            tooltip: "Accept",
+                            onPressed: () {
+                              rideController.respondToRequest(
+                                  item.ride.id, item.request.passengerId, true);
+                              widget.onUpdate();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            tooltip: "Reject",
+                            onPressed: () {
+                              rideController.respondToRequest(
+                                  item.ride.id, item.request.passengerId, false);
+                              widget.onUpdate();
+                            },
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _statusBadge(String status) {
@@ -174,7 +242,6 @@ class _RequestsTabState extends State<RequestsTab> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
@@ -185,16 +252,6 @@ class _RequestsTabState extends State<RequestsTab> {
         style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor),
       ),
     );
-  }
-
-  void _highlightRequest(BuildContext context) {
-    final snack = SnackBar(
-      content: const Text("Request updated"),
-      duration: const Duration(seconds: 1),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFF1ABC4A),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snack);
   }
 }
 

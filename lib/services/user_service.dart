@@ -20,7 +20,7 @@ class UserService {
   static DummyUser? _currentUser;
 
   static DummyUser get currentUser => _currentUser!;
-
+  
   static List<DummyUser> dummyUsers = [
   DummyUser(
     id: '1',
@@ -46,6 +46,12 @@ class UserService {
     return null;
   }
 }
+static void setTestUser() {
+  if (_currentUser == null) {
+    // Pick a driver user to match mock ride driver IDs
+    _currentUser = dummyUsers.firstWhere((u) => u.role == 'Carpooler');
+  }
+}
   static void login(DummyUser user) {
     _currentUser = user;
   }
@@ -54,7 +60,7 @@ class UserService {
   static void logout() {
     _currentUser = null;
   }
-
+  
   static bool isLoggedIn() {
     return _currentUser != null;
   }
