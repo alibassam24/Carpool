@@ -36,6 +36,14 @@ class UserService {
     email: 'driver@example.com',
     password: 'driver123',
   ),
+  DummyUser(
+    id: '2',
+    name: 'Ahmed Driver',
+    role: 'Rider',
+    email: 'rider2@example.com',
+    password: 'driver123',
+    
+  ),
 ];
   static DummyUser? authenticate(String email, String password) {
   try {

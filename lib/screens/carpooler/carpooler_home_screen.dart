@@ -1,6 +1,8 @@
 import 'package:carpool_connect/controllers/ride_controller.dart';
+import 'package:carpool_connect/tabs/carpooler_profile_tab.dart';
 import 'package:carpool_connect/services/ride_service.dart';
 import 'package:carpool_connect/services/user_service.dart';
+import 'package:carpool_connect/tabs/ride_history_tab.dart';
 import 'package:carpool_connect/widgets/create_ride_widget.dart';
 import 'package:carpool_connect/models/ride_model.dart';
 import 'package:carpool_connect/widgets/ride_details.dart';
@@ -26,7 +28,7 @@ class _CarpoolerHomeScreenState extends State<CarpoolerHomeScreen> {
   const HomeTab(),
   const Center(child: Text("Chats coming soon")),
   const RequestsTab(),   // ✅ now uses the real tab
-  const Center(child: Text("Profile coming soon")),
+  const CarpoolerProfileTab(),
 ];
 
   void _openCreateRideSheet() {
@@ -985,7 +987,12 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.history),
             title: const Text("Ride History"),
-            onTap: () {},
+            onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RideHistoryScreen()),
+    );
+  },
           ),
           ListTile(
             leading: const Icon(Icons.swap_horiz),

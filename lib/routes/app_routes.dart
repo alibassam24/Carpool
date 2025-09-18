@@ -1,3 +1,5 @@
+import 'package:carpool_connect/tabs/ride_history_tab.dart';
+
 import '../screens/carpooler/carpooler_signup.dart';
 import '../screens/carpooler/verification_pending_screen.dart';
 import 'package:get/get.dart';
@@ -19,7 +21,7 @@ class AppRoutes {
   static const carpoolerHome = '/carpooler_home';
   static const riderHome = '/rider_home';
   static const verificationPending = '/verification_pending';
-
+  static const rideHistory='/ride_history';
   static final routes = [
     GetPage(
       name: splash,
@@ -74,6 +76,12 @@ class AppRoutes {
       page: () => const VerificationPendingScreen(),
       transition: Transition.zoom,
       transitionDuration: const Duration(milliseconds: 400),
+    ),
+    GetPage(
+      name: rideHistory,
+      page: () => const RideHistoryScreen(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 500),
     ),
   ];
 }
