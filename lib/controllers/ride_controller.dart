@@ -137,3 +137,50 @@ class RideController extends GetxController {
     rides.refresh();
   }
 }
+/* import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class RideController extends GetxController {
+  final supabase = Supabase.instance.client;
+
+  var rides = [].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchRides();
+
+    // Subscribe to realtime rides updates
+    supabase.channel('rides')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'rides',
+        callback: (payload) {
+          fetchRides();
+        },
+      )
+      .subscribe();
+  }
+
+  Future<void> fetchRides() async {
+    final res = await supabase.from('rides').select();
+    rides.value = res;
+  }
+
+  Future<int?> createRide(Map<String, dynamic> params) async {
+    final res = await supabase.rpc('create_ride', params: params);
+    return res;
+  }
+
+  Future<List<dynamic>> searchRides(
+      double lat, double lng, double radius) async {
+    final res = await supabase.rpc('search_rides', params: {
+      'origin_lat': lat,
+      'origin_lng': lng,
+      'radius_km': radius,
+    });
+    return res;
+  }
+}
+*/
