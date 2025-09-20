@@ -19,3 +19,14 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+subprojects {
+    // Only patch the uni_links Android library module
+    if (name == "uni_links") {
+        plugins.withId("com.android.library") {
+            extensions.configure<com.android.build.gradle.LibraryExtension> {
+                namespace = "name.avioli.unilinks"
+            }
+        }
+    }
+}

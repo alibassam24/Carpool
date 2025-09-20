@@ -6,6 +6,22 @@
 	<string>We need camera access to upload your documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need photo library access to pick your documents.</string>
+		
+
+
+		<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>carpoolconnect</string>
+    </array>
+  </dict>
+</array>
+
+
+
+
 
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

@@ -1,4 +1,4 @@
-import 'package:carpool_connect/controllers/payment_controller';
+import 'package:carpool_connect/controllers/payment_controller.dart';
 import 'package:carpool_connect/controllers/ride_tracking_controller.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';

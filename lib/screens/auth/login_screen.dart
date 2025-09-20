@@ -5,6 +5,7 @@ import 'package:carpool_connect/screens/rider/rider_home_screen.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../widgets/custom_button.dart';
@@ -29,26 +30,50 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscureText = true;
-  void _login() async {
-  if (_formKey.currentState!.validate()) {
+    Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
-    final user = UserService.authenticate(
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text.trim();
 
-    if (user != null) {
-      UserService.login(user); // Set the current user
+      // ✅ Authenticate with Supabase
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
 
-      final savedRole = box.read('userRole');
-      Get.snackbar("Success", "Welcome back, ${user.name}");
+      final user = response.user;
+      if (user == null) {
+        Get.snackbar("Login Failed", "Invalid credentials. Please try again.");
+        return;
+      }
 
+      // ✅ Fetch extended user info (role, etc.) from your users table
+      final dbUser = await Supabase.instance.client
+          .from("users")
+          .select()
+          .eq("id", user.id)
+          .maybeSingle();
+
+      if (dbUser == null) {
+        Get.snackbar("Error", "User record not found in database.");
+        return;
+      }
+
+      final savedRole = box.read('userRole'); // role saved in local storage
+      final dbRole = dbUser["role"];
+
+      Get.snackbar("Success 🎉", "Welcome back!");
+
+      // ✅ Role-based navigation
       if (savedRole != null) {
         if (savedRole == 'rider') {
           Get.offAll(() => const RiderHomeScreen());
         } else if (savedRole == 'carpooler') {
-          if (user.role == "Carpooler") {
+          if (dbRole == "carpooler") {
             Get.offAll(() => const CarpoolerHomeScreen());
           } else {
             Get.offAll(() => const ExtendedCarpoolerSignupScreen());
@@ -57,13 +82,15 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         Get.offAll(() => const ChooseRoleScreen());
       }
-    } else {
-      Get.snackbar("Login Failed", "Invalid credentials");
-    }
 
-    setState(() => _isLoading = false);
+    } on AuthException catch (e) {
+      Get.snackbar("Login Failed", e.message);
+    } catch (e) {
+      Get.snackbar("Error", "Something went wrong: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
-}
 
   /* void _login() async {
   if (_formKey.currentState!.validate()) {

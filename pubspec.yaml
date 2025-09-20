@@ -29,7 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   uuid: ^3.0.7
-
+  app_links: ^6.4.1
   flutter:
     sdk: flutter
   supabase_flutter: ^2.10.1
