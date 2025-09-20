@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'login_screen.dart';
 import '../../widgets/custom_button.dart';
@@ -25,26 +26,46 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePass = true;
   bool _obscureConfirm = true;
 
-  void _signup() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        // TODO: Replace with real signup logic
-        await Future.delayed(const Duration(seconds: 2));
-        Get.snackbar("Success", "Account created successfully");
-        Get.off(() => const LoginScreen());
-      } catch (e) {
-        Get.snackbar("Signup Failed", e.toString());
-      } finally {
-        setState(() => _isLoading = false);
+  final supabase = Supabase.instance.client;
+    Future<void> _signup() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text.trim();
+
+      // ✅ Only call Supabase Auth signup
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+      if (user == null) {
+        Get.snackbar("Signup Failed", "No user returned from Supabase");
+        return;
       }
+
+      // At this point triggers will create users/profiles/passenger_profiles automatically
+      Get.snackbar("Success 🎉", "Account created.");
+      Get.offAll(() => const LoginScreen());
+
+    } on AuthException catch (e) {
+      Get.snackbar("Signup Failed", e.message);
+    } catch (e) {
+      Get.snackbar("Error", "Something went wrong: $e");
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9F6),
+      backgroundColor: const Color(0xFFFAF9F6), // Background Cream
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
@@ -53,26 +74,23 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Center(
-                  child: const Text(
-                    "Create Account 🚗",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF255A45),
-                    ),
+                const Text(
+                  "Create Account 🚗",
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF255A45),
                   ),
                 ),
                 const SizedBox(height: 10),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  children: [const Text(
-                    "Join the carpooling community and start saving!",
-                    style: TextStyle(fontSize: 16),
-                  ),],
+                const Text(
+                  "Join the carpooling community and start saving!",
+                  style: TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
 
+                // Full name
                 CustomTextField(
                   controller: nameController,
                   hintText: "Full Name",
@@ -81,30 +99,41 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // Phone number
                 CustomTextField(
                   controller: phoneController,
                   hintText: "Phone Number",
                   keyboardType: TextInputType.phone,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Phone number required";
-                    if (value.length < 10) return "Enter a valid phone number";
+                    if (value == null || value.isEmpty) {
+                      return "Phone number required";
+                    }
+                    if (value.length < 10) {
+                      return "Enter a valid phone number";
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
+                // Email
                 CustomTextField(
                   controller: emailController,
                   hintText: "Email",
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Email is required";
-                    if (!GetUtils.isEmail(value)) return "Enter a valid email";
+                    if (value == null || value.isEmpty) {
+                      return "Email is required";
+                    }
+                    if (!GetUtils.isEmail(value)) {
+                      return "Enter a valid email";
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
+                // Password
                 CustomTextField(
                   controller: passwordController,
                   hintText: "Password",
@@ -117,13 +146,18 @@ class _SignupScreenState extends State<SignupScreen> {
                     onPressed: () => setState(() => _obscurePass = !_obscurePass),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Password is required";
-                    if (value.length < 6) return "Minimum 6 characters";
+                    if (value == null || value.isEmpty) {
+                      return "Password is required";
+                    }
+                    if (value.length < 6) {
+                      return "Minimum 6 characters required";
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
+                // Confirm Password
                 CustomTextField(
                   controller: confirmPassController,
                   hintText: "Confirm Password",
@@ -137,8 +171,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         setState(() => _obscureConfirm = !_obscureConfirm),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Please confirm password";
-                    if (value != passwordController.text) return "Passwords do not match";
+                    if (value == null || value.isEmpty) {
+                      return "Please confirm your password";
+                    }
+                    if (value != passwordController.text) {
+                      return "Passwords do not match";
+                    }
                     return null;
                   },
                 ),
