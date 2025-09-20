@@ -34,39 +34,49 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Timer(const Duration(seconds: 2), () {
-      _decideNextScreen();
-    });
+    Timer(const Duration(seconds: 2), _decideNextScreen);
   }
 
   Future<void> _decideNextScreen() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final isFirstTime = prefs.getBool('is_first_time') ?? true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isFirstTime = prefs.getBool('is_first_time') ?? true;
 
-    if (isFirstTime) {
-      await prefs.setBool('is_first_time', false);
-      Get.offAllNamed(AppRoutes.onboarding);
-      return;
-    }
+      if (isFirstTime) {
+        await prefs.setBool('is_first_time', false);
+        Get.offAllNamed(AppRoutes.onboarding);
+        return;
+      }
 
-    final supabase = Supabase.instance.client;
-    final session = supabase.auth.currentSession;
+      final supabase = Supabase.instance.client;
 
-    if (session == null || session.user == null) {
-      // Not logged in → Login
+      // Check if session exists
+      final session = supabase.auth.currentSession;
+      if (session == null || session.user == null) {
+        Get.offAllNamed(AppRoutes.login);
+        return;
+      }
+
+      // Double-check user validity (in case account was deleted)
+      final userRes = await supabase.auth.getUser();
+      if (userRes.user == null) {
+        await supabase.auth.signOut();
+        Get.offAllNamed(AppRoutes.login);
+        return;
+      }
+
+      // If logged in and valid → go to ChooseRole
+      Get.offAllNamed(AppRoutes.roles);
+    } catch (e, st) {
+      debugPrint("❌ Splash decision error: $e\n$st");
+
+      // On any error → reset session and send to login
+      try {
+        await Supabase.instance.client.auth.signOut();
+      } catch (_) {}
       Get.offAllNamed(AppRoutes.login);
-      return;
     }
-
-    // ✅ Logged in → always go to ChooseRole
-    Get.offAllNamed(AppRoutes.roles);
-
-  } catch (e) {
-    debugPrint("❌ Splash decision error: $e");
-    Get.offAllNamed(AppRoutes.login);
   }
-}
 
   @override
   void dispose() {
@@ -89,7 +99,9 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 150,
               ),
               const SizedBox(height: 24),
-              const CircularProgressIndicator(color: Color(0xFF255A45)), // Primary Green
+              const CircularProgressIndicator(
+                color: Color(0xFF255A45), // Primary Green
+              ),
             ],
           ),
         ),

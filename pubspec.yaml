@@ -34,6 +34,8 @@ dependencies:
     sdk: flutter
   supabase_flutter: ^2.10.1
   image_picker: ^1.1.2
+
+  flutter_dotenv: ^5.1.0
  # State Management & Navigation
   get: ^4.6.6
   lottie: ^2.7.0
@@ -71,6 +73,8 @@ flutter:
   assets:
     - assets/images/
     - assets/animations/verified.json
+    - assets/animations/success.json
+    - .env  
    # - assets/images/logo2.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

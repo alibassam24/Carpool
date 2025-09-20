@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../../widgets/app_snack.dart';
+import 'email_verification_screen.dart';
 import 'login_screen.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -49,9 +50,8 @@ class _SignupScreenState extends State<SignupScreen> {
       }
 
       // At this point triggers will create users/profiles/passenger_profiles automatically
-      Get.snackbar("Success 🎉", "Account created.");
-      Get.offAll(() => const LoginScreen());
-
+     AppSnack.success("Verification Email Sent", "Please check your inbox.");
+     Get.offAll(() => const EmailVerificationScreen());
     } on AuthException catch (e) {
       Get.snackbar("Signup Failed", e.message);
     } catch (e) {
