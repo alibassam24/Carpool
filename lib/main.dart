@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:carpool_connect/screens/auth/email_verification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -10,7 +11,6 @@ import 'controllers/ride_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_routes.dart';
 import 'services/user_service.dart';
-
 
 // Screens
 import 'screens/splash/splash_screen.dart';
@@ -27,56 +27,54 @@ Future<void> main() async {
     // ✅ Init GetStorage (local storage)
     await GetStorage.init();
 
-    // ✅ Put RideController globally
-    Get.put(RideController(), permanent: true);
-
-    // ✅ Initialize Supabase
+    // ✅ Initialize Supabase BEFORE using client
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL'] ?? '',
       anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
     );
 
+    // ✅ Put RideController globally AFTER Supabase is ready
+    Get.put(RideController(), permanent: true);
+
     // (Optional) set test user for dev
     UserService.setTestUser();
 
-    // ✅ Listen for auth events (signup, login, verify email, etc.)
+    // ✅ Listen for auth events
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-  final event = data.event;
-  final user = data.session?.user;
-  debugPrint("🔑 Auth event: $event, user: ${user?.id}");
+      final event = data.event;
+      final user = data.session?.user;
+      debugPrint("🔑 Auth event: $event, user: ${user?.id}");
 
-  try {
-    // Only react when app is in Splash (e.g. returning from email verification deep link)
-    if ((event == AuthChangeEvent.signedIn || event == AuthChangeEvent.userUpdated) &&
-        Get.currentRoute == AppRoutes.splash) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (Get.currentRoute == AppRoutes.splash) {
-          Get.offAllNamed(AppRoutes.roles);
+      try {
+        if ((event == AuthChangeEvent.signedIn || event == AuthChangeEvent.userUpdated) &&
+            Get.currentRoute == AppRoutes.splash) {
+          Future.delayed(const Duration(seconds: 2), () {
+            if (Get.currentRoute == AppRoutes.splash) {
+              Get.offAllNamed(AppRoutes.roles);
+            }
+          });
         }
-      });
-    }
 
-    if (event == AuthChangeEvent.signedOut) {
-      if (Get.currentRoute != AppRoutes.splash) {
-        Get.offAllNamed(AppRoutes.login);
+        if (event == AuthChangeEvent.signedOut) {
+          if (Get.currentRoute != AppRoutes.splash) {
+            Get.offAllNamed(AppRoutes.login);
+          }
+        }
+      } catch (e, st) {
+        debugPrint("❌ Auth listener error: $e\n$st");
+        if (Get.isOverlaysOpen) {
+          Get.back();
+        }
+        Get.snackbar(
+          "Error",
+          "Something went wrong. Please try again.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
       }
-    }
-  } catch (e, st) {
-    debugPrint("❌ Auth listener error: $e\n$st");
-    if (Get.isOverlaysOpen) {
-      Get.back(); // close any dialogs/spinners
-    }
-    Get.snackbar(
-      "Error",
-      "Something went wrong. Please try again.",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
-    );
-  }
-});
-
+    });
 
     // ✅ Setup deep link listener
     _appLinks = AppLinks();
@@ -101,11 +99,10 @@ Future<void> main() async {
         Get.snackbar("Error", "Invalid deep link.");
       },
     );
- 
+
     runApp(const CarpoolApp());
   } catch (e, st) {
     debugPrint("❌ Fatal error during app init: $e\n$st");
-    
     runApp(const ErrorApp());
   }
 }

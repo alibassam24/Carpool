@@ -1,4 +1,4 @@
-// mock_data.dart
+/* // mock_data.dart
 import 'package:carpool_connect/models/ride_model.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:get/get.dart';
@@ -61,3 +61,4 @@ class MockData {
     ].obs;
   }
 }
+ */

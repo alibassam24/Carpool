@@ -54,7 +54,7 @@ class RideService {
     destination: destination,
     seats: seats,
     when: when,
-    driverId: createdBy,
+    carpoolerId: createdBy,
     genderPreference: genderPreference,
     requests: requests ?? [], // initialize as empty list if null
   );

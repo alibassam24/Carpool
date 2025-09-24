@@ -13,7 +13,8 @@ class RideDetailsModal extends StatefulWidget {
   State<RideDetailsModal> createState() => _RideDetailsModalState();
 }
 
-class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerProviderStateMixin {
+class _RideDetailsModalState extends State<RideDetailsModal>
+    with SingleTickerProviderStateMixin {
   final RideController rideController = Get.find<RideController>();
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -56,8 +57,9 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.97),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                  boxShadow: [
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(28)),
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
                       blurRadius: 20,
@@ -72,10 +74,12 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 36), // space for close button
-                          // HEADER: Origin → Destination
+
+                          /// HEADER
                           Row(
                             children: [
-                              const Icon(Icons.directions_car, size: 30, color: Color(0xFF255A45)),
+                              const Icon(Icons.directions_car,
+                                  size: 30, color: Color(0xFF255A45)),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -91,129 +95,127 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                           ),
                           const SizedBox(height: 24),
 
-                          // RIDE INFO CHIPS
+                          /// RIDE INFO
                           Wrap(
                             spacing: 12,
                             runSpacing: 8,
                             children: [
-                              _infoChip(Icons.event, "${ride.when.toLocal()}"),
+                              _infoChip(Icons.event, ride.when.toLocal().toString()),
                               _infoChip(Icons.event_seat, "${ride.seats} seats"),
                               _infoChip(Icons.person, ride.genderPreference),
                             ],
                           ),
                           const SizedBox(height: 28),
 
-                          // PASSENGER REQUESTS (only for driver)
-                          if (ride.driverId == currentUser?.id)
+                          /// PASSENGER REQUESTS (for owner only)
+                          if (ride.carpoolerId == currentUser?.id)
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
                                   "Requests",
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 12),
                                 if (ride.requests.isEmpty)
                                   const Text("No requests yet",
-                                      style: TextStyle(color: Colors.grey, fontSize: 16)),
-                                ...ride.requests.map((req) {
-                                  Color bgColor;
-                                  if (req.status == "accepted") {
-                                    bgColor = Colors.green.shade50;
-                                  } else if (req.status == "pending") {
-                                    bgColor = Colors.amber.shade50;
-                                  } else {
-                                    bgColor = Colors.red.shade50;
-                                  }
+                                      style: TextStyle(
+                                          color: Colors.grey, fontSize: 16))
+                                else
+                                  ...ride.requests.map((req) {
+                                    Color bgColor;
+                                    if (req.status == "accepted") {
+                                      bgColor = Colors.green.shade50;
+                                    } else if (req.status == "pending") {
+                                      bgColor = Colors.amber.shade50;
+                                    } else {
+                                      bgColor = Colors.red.shade50;
+                                    }
 
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(vertical: 6),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                    decoration: BoxDecoration(
-                                      color: bgColor,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black12,
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        )
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(req.passengerName,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600, fontSize: 16)),
-                                        if (req.status == "pending")
-                                          Row(
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(Icons.check, color: Colors.green),
-                                                onPressed: () {
-                                                  rideController.respondToRequest(
-                                                      ride.id, req.passengerId, true);
-                                                },
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.close, color: Colors.red),
-                                                onPressed: () {
-                                                  rideController.respondToRequest(
-                                                      ride.id, req.passengerId, false);
-                                                },
-                                              ),
-                                            ],
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 14),
+                                      decoration: BoxDecoration(
+                                        color: bgColor,
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: Colors.black12,
+                                            blurRadius: 4,
+                                            offset: Offset(0, 2),
                                           )
-                                        else
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(req.passengerName,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 16)),
                                           Text(
-                                            req.status.capitalizeFirst!,
+                                            req.status.capitalizeFirst ??
+                                                req.status,
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
                                               color: req.status == "accepted"
                                                   ? Colors.green
-                                                  : Colors.red,
+                                                  : req.status == "pending"
+                                                      ? Colors.amber[800]
+                                                      : Colors.red,
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                               ],
                             ),
 
                           const SizedBox(height: 28),
 
-                          // JOIN RIDE BUTTON
-                          if (ride.driverId != currentUser?.id && ride.seats > 0)
+                          /// JOIN RIDE BUTTON (non-owners only)
+                          if (ride.carpoolerId != currentUser?.id &&
+                              ride.seats > 0)
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  final request = RideRequest(
-                                    passengerId: currentUser!.id,
-                                    passengerName: currentUser.name,
-                                    seatsRequested: 1,
-                                    status: 'pending',
-                                  );
-
-                                  ride.requests.add(request);
-                                  rideController.rides.refresh();
-
-                                  Get.snackbar(
-                                    'Request Sent',
-                                    'You requested to join this ride.',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                    margin: const EdgeInsets.all(12),
-                                    borderRadius: 12,
-                                    backgroundColor: Colors.black87,
-                                    colorText: Colors.white,
-                                  );
+                                onPressed: () async {
+                                  try {
+                                    await rideController
+                                        .requestRide(ride.id.toString());
+                                    Get.snackbar(
+                                      'Request Sent',
+                                      'You requested to join this ride.',
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      margin: const EdgeInsets.all(12),
+                                      borderRadius: 12,
+                                      backgroundColor: Colors.green.shade50,
+                                      colorText: Colors.black87,
+                                    );
+                                  } catch (e) {
+                                    Get.snackbar(
+                                      'Error',
+                                      e.toString(),
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      margin: const EdgeInsets.all(12),
+                                      borderRadius: 12,
+                                      backgroundColor: Colors.red.shade50,
+                                      colorText: Colors.black87,
+                                    );
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF255A45),
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 18),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(28),
                                   ),
@@ -221,7 +223,10 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                                 ),
                                 child: const Text(
                                   "Join Ride",
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
                                 ),
                               ),
                             ),
@@ -230,12 +235,13 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
                       ),
                     ),
 
-                    // CLOSE BUTTON
+                    /// CLOSE BUTTON
                     Positioned(
                       top: 0,
                       right: 0,
                       child: IconButton(
-                        icon: const Icon(Icons.close, size: 28, color: Colors.grey),
+                        icon: const Icon(Icons.close,
+                            size: 28, color: Colors.grey),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
@@ -259,11 +265,11 @@ class _RideDetailsModalState extends State<RideDetailsModal> with SingleTickerPr
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black12,
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           )
         ],
       ),
