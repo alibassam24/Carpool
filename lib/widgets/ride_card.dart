@@ -1,9 +1,10 @@
+import 'package:carpool_connect/widgets/ride_details.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/ride_model.dart';
 import '../services/user_service.dart';
 import '../controllers/ride_controller.dart';
-import 'ride_details.dart';
+
 
 class RideCard extends StatelessWidget {
   final Ride ride;
@@ -17,12 +18,10 @@ class RideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isOwner = ride.carpoolerId == currentUser?.id;
-    final bool isFull = (ride.seats) <= 0;
+    final bool isFull = ride.seats <= 0;
 
-    // We’ll eventually load requests from DB; for now, keep empty
-    final bool alreadyRequested = ride.requests.any(
-      (r) => r.passengerId == currentUser?.id && r.status == 'pending',
-    );
+    // TODO: wire requests table. For now, default false
+    final bool alreadyRequested = false;
 
     /// Trailing button logic
     Widget trailing;
@@ -38,7 +37,7 @@ class RideCard extends StatelessWidget {
       trailing = ElevatedButton(
         onPressed: () async {
           try {
-            await rideController.requestRide(ride.id.toString()); // ✅ uses RPC
+            await rideController.requestRide(ride.id); // ✅ id is already String
             Get.snackbar(
               'Request Sent',
               'You requested to join this ride.',
@@ -99,11 +98,15 @@ class RideCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: onTap ??
             () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => RideDetailsModal(ride: ride),
+              // open ride details screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RideDetailsScreen(
+                    ride: ride,
+                    myUserId: currentUser?.id ?? '',
+                  ),
+                ),
               );
             },
         child: Row(
@@ -134,8 +137,6 @@ class RideCard extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 13, color: Colors.grey.shade600),
                   ),
-                  const SizedBox(height: 6),
-                  // 🚨 Owner request handling will come later when we wire requests table
                 ],
               ),
             ),

@@ -1,0 +1,1 @@
+const kMapboxToken = 'pk.eyJ1IjoiYWxpYmFzc2FtMiIsImEiOiJjbWZ4em43N2EwYzM3MnFzZmJiaDFvaTF0In0.nPYkSAGLMpToqI883WZVig';

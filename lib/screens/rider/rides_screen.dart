@@ -1,9 +1,13 @@
-import 'package:carpool_connect/screens/rider/chat_screen.dart';
-import 'package:carpool_connect/services/user_service.dart';
+// lib/screens/rider/rides_screen.dart
 import 'package:flutter/material.dart';
-import '/services/chat_service.dart';
 import 'package:get/get.dart';
-//List<Map<String, dynamic>> chats = ChatService().getChatU();
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../services/ride_service.dart';
+import '../../services/user_service.dart';
+import '../../widgets/ride_details.dart';
+import '../../core/result.dart';
+
 class RidesScreen extends StatefulWidget {
   const RidesScreen({super.key});
 
@@ -12,134 +16,15 @@ class RidesScreen extends StatefulWidget {
 }
 
 class _RidesScreenState extends State<RidesScreen> {
-  //final List<String> _rides = [];
-  final List<Map<String, dynamic>> _rides = [];
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
-  int _page = 1;
-
-  final ScrollController _scrollController = ScrollController();
+  final RideService _rideService = RideService();
+  late final Stream<List<Map<String, dynamic>>> _rideStream;
 
   @override
   void initState() {
     super.initState();
-
-    // ✅ Delay data fetch after first frame (to prevent build error)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadRides();
-    });
-
-    _scrollController.addListener(_onScroll);
+    _rideStream = _rideService.streamRides();
   }
 
-  Future<void> _loadRides({bool refresh = false}) async {
-  if (_isLoadingMore) return;
-
-  if (refresh) {
-    if (!mounted) return;
-    setState(() {
-      _page = 1;
-      _rides.clear();
-      _hasMore = true;
-    });
-  }
-
-  if (!mounted) return;
-  setState(() => _isLoadingMore = true);
-
-  await Future.delayed(const Duration(seconds: 2));
-
-  if (!mounted) return;
-
-  if (_page > 3) {
-    setState(() {
-      _hasMore = false;
-      _isLoadingMore = false;
-    });
-    return;
-  }
-
-  List<Map<String, dynamic>> newRides = List.generate(
-    10,
-    (index) => {
-      'title': "Ride ${((_page - 1) * 10) + index + 1}",
-      'time': "10:30 AM",
-      'price': "Rs 300",
-      'createdBy': index % 2 == 0 ? '1' : '2',
-    },
-  );
-
-  if (!mounted) return;
-  setState(() {
-    _rides.addAll(newRides);
-    _isLoadingMore = false;
-    _page++;
-  });
-}
-
-
-  /// 🧠 Loads mock rides data with pagination support
-/*   Future<void> _loadRides({bool refresh = false}) async {
-    if (_isLoadingMore) return;
-
-    if (refresh) {
-      setState(() {
-        _page = 1;
-        _rides.clear();
-        _hasMore = true;
-      });
-    }
-
-    setState(() => _isLoadingMore = true);
-
-    // Simulate API/network delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (_page > 3) {
-      // No more pages
-      setState(() {
-        _hasMore = false;
-        _isLoadingMore = false;
-      });
-      return;
-    }
-
-    // 🧪 Mock ride data
-   List<Map<String, dynamic>> newRides = List.generate(
-  10,
-  (index) => {
-    'title': "Ride ${((_page - 1) * 10) + index + 1}",
-    'time': "10:30 AM",
-    'price': "Rs 300",
-    'createdBy': index % 2 == 0 ? '1' : '2', // alternating user IDs
-  },
-);
-
-
-    setState(() {
-      _rides.addAll(newRides);
-      _isLoadingMore = false;
-      _page++;
-    });
-  } */
-
-  /// 📦 Automatically load more rides when user scrolls near bottom
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoadingMore &&
-        _hasMore) {
-      _loadRides();
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// 🔍 Shows search modal bottom sheet with white background
   void _showSearchBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -159,10 +44,8 @@ class _RidesScreenState extends State<RidesScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Search Rides",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+              const Text("Search Rides",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               _buildSearchField("From", Icons.location_on_outlined),
               const SizedBox(height: 12),
@@ -175,14 +58,15 @@ class _RidesScreenState extends State<RidesScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
-                  // TODO: Add actual search filter logic here
+                  // TODO: implement search with RPC params
                 },
                 icon: const Icon(Icons.search),
                 label: const Text("Find Rides"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF255A45),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),
@@ -194,7 +78,6 @@ class _RidesScreenState extends State<RidesScreen> {
     );
   }
 
-  /// 🔤 Reusable input field used inside search modal
   Widget _buildSearchField(String label, IconData icon) {
     return TextField(
       decoration: InputDecoration(
@@ -217,110 +100,68 @@ class _RidesScreenState extends State<RidesScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _loadRides(refresh: true),
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          itemCount: _rides.length + (_hasMore ? 1 : 0),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _rideStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-itemBuilder: (context, index) {
-  if (index < _rides.length) {
-   final ride = _rides[index];
-  final createdBy = ride['createdBy'];
-  final driver = UserService.dummyUsers.firstWhere((u) => u.id == createdBy);
-  final driverName = driver.name;
-    return Card(
-      color: const Color(0xFFE6F2EF),
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.directions_car, color: Color(0xFF255A45)),
-              title: Text(driverName),
-              subtitle: const Text("10:30 AM • Rs 300"),
-              
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    try {
-                      // Ensure the chat gets added to message list
-                      final currentUserId = UserService.currentUser.id;
-                      final otherUserId = driver.id;
-                      ChatService.startChatIfNeeded(currentUserId, otherUserId);
-                      Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatScreen(
-                          currentUserId: UserService.currentUser.id,
-                          otherUserId: driver.id,
-                        ),
-                      ),
+          final rides = snapshot.data!;
+          if (rides.isEmpty) {
+            return const Center(child: Text("No active rides available"));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: rides.length,
+            itemBuilder: (context, index) {
+              final ride = rides[index];
+
+              return Card(
+                color: const Color(0xFFE6F2EF),
+                margin: const EdgeInsets.only(bottom: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  leading: const Icon(Icons.directions_car,
+                      color: Color(0xFF255A45)),
+                  title: Text(
+                    ride['origin_text'] ?? 'Unknown Origin',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    "${ride['destination_text'] ?? 'Unknown Destination'} • Rs ${ride['price']} • ${ride['date_time']}",
+                  ),
+                  onTap: () {
+                    final summary = RideSummary(
+                      rideId: ride['id'],
+                      driverName: "Driver", // TODO: join with users
+                      driverPhotoUrl: "",
+                      driverRating: 4.5,
+                      carModel: "Car Model",
+                      carPlate: "ABC-123",
+                      seatsLeft: ride['passenger_count'] ?? 0,
+                      dateTime: DateTime.parse(ride['date_time']),
+                      originLat: ride['origin_lat'],
+                      originLng: ride['origin_lng'],
+                      destLat: ride['destination_lat'],
+                      destLng: ride['destination_lng'],
+                      price: double.parse(ride['price'].toString()),
+                      carpoolerId: ride['carpooler_id'],
                     );
 
-                      Get.snackbar("Success", "Chat started with $driverName");
-
-                    } catch (e) {
-                      Get.snackbar("Failed to start chat", "$e");
-
-                    }
+                    Get.to(() => RideDetailsScreen(
+                        ride: summary, myUserId: UserService.currentUser.id));
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF255A45),
-                    side: const BorderSide(color: Color(0xFF255A45)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: const Text("Chat"),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    try {
-                      Get.snackbar("Success", "Join request sent");
-
-                    } catch (e) {
-                      Get.snackbar("Error", "$e");
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF255A45),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                  icon: const Icon(Icons.send),
-                  label: const Text("Join"),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  } else {
-    return const Padding(
-      padding: EdgeInsets.all(16),
-      child: Center(child: CircularProgressIndicator()),
-    );
-  }
-},
-// item builder
-        ),
+              );
+            },
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showSearchBottomSheet(context),
@@ -332,6 +173,3 @@ itemBuilder: (context, index) {
     );
   }
 }
-
-//theme cards dynamically
-//change snackbar editing by making a global snackbar 

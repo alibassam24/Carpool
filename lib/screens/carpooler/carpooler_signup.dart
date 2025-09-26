@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final box = GetStorage();
 
@@ -18,6 +19,7 @@ class _ExtendedCarpoolerSignupScreenState
     extends State<ExtendedCarpoolerSignupScreen> {
   int _currentStep = 0;
   final ImagePicker _picker = ImagePicker();
+  final supabase = Supabase.instance.client;
 
   XFile? _licenseImage;
   XFile? _carNumberImage;
@@ -31,7 +33,7 @@ class _ExtendedCarpoolerSignupScreenState
     if (image != null) {
       onImagePicked(image);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Image uploaded successfully')),
+        const SnackBar(content: Text('✅ Image selected')),
       );
     }
   }
@@ -48,7 +50,6 @@ class _ExtendedCarpoolerSignupScreenState
     if (_currentStep > 0) {
       setState(() => _currentStep -= 1);
     } else {
-      // If at first step, cancel goes back to role selection
       _goToChooseRole();
     }
   }
@@ -56,6 +57,35 @@ class _ExtendedCarpoolerSignupScreenState
   void _goToChooseRole() {
     Get.offAllNamed('/roles');
   }
+
+  Future<String?> _uploadFile(XFile file, String docType) async {
+  try {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) throw "Not logged in";
+
+    final bytes = await File(file.path).readAsBytes();
+    final fileExt = file.path.split('.').last;
+
+    // 👇 Save inside folder named by user.id
+    final filePath =
+        "${user.id}/${docType}_${DateTime.now().millisecondsSinceEpoch}.$fileExt";
+
+    await client.storage
+        .from("driver_docs")
+        .uploadBinary(filePath, bytes,
+            fileOptions: const FileOptions(upsert: true));
+
+    // Generate a public URL (or signed URL if bucket is private)
+    final publicUrl =
+        client.storage.from("driver_docs").getPublicUrl(filePath);
+
+    return publicUrl;
+  } catch (e) {
+    debugPrint("❌ Upload failed: $e");
+    return null;
+  }
+}
 
   Future<void> _submitForm() async {
     if (_licenseImage == null ||
@@ -70,14 +100,51 @@ class _ExtendedCarpoolerSignupScreenState
 
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) throw "User not logged in";
 
-    box.write('carpoolerStatus', 'pending');
+      // 1. Upload docs
+   final licenseUrl = await _uploadFile(_licenseImage!, "license");
+final carPlateUrl = await _uploadFile(_carNumberImage!, "plate");
+final cnicFrontUrl = await _uploadFile(_cnicFrontImage!, "cnic_front");
+final cnicBackUrl = await _uploadFile(_cnicBackImage!, "cnic_back");
 
-    setState(() => _isSubmitting = false);
 
-    Get.offAllNamed('/verification_pending');
+      if ([licenseUrl, carPlateUrl, cnicFrontUrl, cnicBackUrl]
+          .any((url) => url == null)) {
+        throw "One or more uploads failed. Please retry.";
+      }
+
+      // 2. Insert into driver_documents
+      await supabase.from("driver_documents").insert({
+        "user_id": user.id,
+        "license_url": licenseUrl,
+        "car_plate_url": carPlateUrl,
+        "cnic_front_url": cnicFrontUrl,
+        "cnic_back_url": cnicBackUrl,
+        "status": "pending",
+      });
+
+      // 3. Update user role + status
+      await supabase.from("users").update({
+        "role": "carpooler",
+        "status": "pending",
+      }).eq("id", user.id);
+
+      // 4. Save local status
+      box.write("carpoolerStatus", "pending");
+
+      // 5. Navigate
+      Get.offAllNamed('/verification_pending');
+    } catch (e, st) {
+      debugPrint("❌ Signup error: $e\n$st");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Signup failed: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Widget _uploadCard(String label, XFile? file, VoidCallback onTap) {
@@ -115,9 +182,7 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _licenseImage = file)),
         ),
         isActive: _currentStep >= 0,
-        state: _licenseImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state: _licenseImage != null ? StepState.complete : StepState.indexed,
       ),
       Step(
         title: const Text('Car Number Plate'),
@@ -127,9 +192,7 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _carNumberImage = file)),
         ),
         isActive: _currentStep >= 1,
-        state: _carNumberImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state: _carNumberImage != null ? StepState.complete : StepState.indexed,
       ),
       Step(
         title: const Text('CNIC Front'),
@@ -139,9 +202,7 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _cnicFrontImage = file)),
         ),
         isActive: _currentStep >= 2,
-        state: _cnicFrontImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state: _cnicFrontImage != null ? StepState.complete : StepState.indexed,
       ),
       Step(
         title: const Text('CNIC Back'),
@@ -151,9 +212,7 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _cnicBackImage = file)),
         ),
         isActive: _currentStep >= 3,
-        state: _cnicBackImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state: _cnicBackImage != null ? StepState.complete : StepState.indexed,
       ),
     ];
   }
@@ -167,7 +226,7 @@ class _ExtendedCarpoolerSignupScreenState
         } else {
           _goToChooseRole();
         }
-        return false; // Prevent default pop
+        return false;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFFAF9F6),
@@ -178,10 +237,7 @@ class _ExtendedCarpoolerSignupScreenState
           actions: [
             TextButton(
               onPressed: _goToChooseRole,
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white)),
             )
           ],
         ),
@@ -218,8 +274,7 @@ class _ExtendedCarpoolerSignupScreenState
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2, color: Colors.white),
                                 )
-                              : Text(_currentStep ==
-                                      _buildSteps().length - 1
+                              : Text(_currentStep == _buildSteps().length - 1
                                   ? 'Submit'
                                   : 'Next'),
                         ),
