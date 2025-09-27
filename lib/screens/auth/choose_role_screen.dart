@@ -43,12 +43,15 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen>
     _fadeController =
         AnimationController(duration: const Duration(milliseconds: 600), vsync: this);
 
-    _fadeIn =
-        Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
-    _carpoolerRotation =
-        Tween<double>(begin: 0, end: 2 * pi).animate(CurvedAnimation(parent: _carpoolerController, curve: Curves.easeInOut));
-    _riderRotation =
-        Tween<double>(begin: 0, end: 2 * pi).animate(CurvedAnimation(parent: _riderController, curve: Curves.easeInOut));
+    _fadeIn = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+    );
+    _carpoolerRotation = Tween<double>(begin: 0, end: 2 * pi).animate(
+      CurvedAnimation(parent: _carpoolerController, curve: Curves.easeInOut),
+    );
+    _riderRotation = Tween<double>(begin: 0, end: 2 * pi).animate(
+      CurvedAnimation(parent: _riderController, curve: Curves.easeInOut),
+    );
 
     _fadeController.forward();
   }
@@ -80,33 +83,37 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen>
         return;
       }
 
-      // Check if carpooler profile exists
-      final carpoolerProfile =
-          await supabase.from('carpooler_profiles').select().eq('id', userId).maybeSingle();
+      /// Check `users` table for role + status
+      final userRow = await supabase
+          .from('users')
+          .select('role, status')
+          .eq('id', userId)
+          .maybeSingle();
 
-      if (carpoolerProfile == null) {
-        // Not a carpooler yet → extended signup
+      if (userRow == null) {
+        // No user profile row → force extended signup
         Get.offAll(() => const ExtendedCarpoolerSignupScreen());
         return;
       }
 
-      // Profile exists → check documents
-      final driverDocs =
-          await supabase.from('driver_documents').select().eq('user_id', userId).maybeSingle();
+      final role = userRow['role']?.toString();
+      final status = userRow['status']?.toString();
 
-      if (driverDocs == null || driverDocs['status'] == 'pending') {
+      if (role != 'carpooler') {
+        // Not yet marked as carpooler
+        Get.offAll(() => const ExtendedCarpoolerSignupScreen());
+        return;
+      }
+
+      if (status == 'verified') {
+        Get.offAll(() => const CarpoolerHomeScreen());
+        return;
+      } else if (status == 'pending') {
         Get.offAll(() => const VerificationPendingScreen());
         return;
-      }
-
-      if (driverDocs['status'] == 'rejected') {
+      } else if (status == 'rejected') {
         Get.snackbar("Rejected", "Your documents were rejected. Please re-upload.");
         Get.offAll(() => const ExtendedCarpoolerSignupScreen());
-        return;
-      }
-
-      if (driverDocs['status'] == 'approved') {
-        Get.offAll(() => const CarpoolerHomeScreen());
         return;
       }
 
@@ -116,7 +123,7 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen>
       debugPrint("❌ Role selection error: $e\n$st");
       Get.snackbar("Error", "Something went wrong. Please try again.");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -134,7 +141,9 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen>
       onTap: () {
         if (_selectedRole != role) {
           setState(() => _selectedRole = role);
-          controller..reset()..forward();
+          controller
+            ..reset()
+            ..forward();
         }
       },
       child: AnimatedBuilder(

@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'package:carpool_connect/core/constants.dart';
 import 'package:carpool_connect/screens/auth/email_verification_screen.dart';
+import 'package:carpool_connect/tests/ride_test.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:app_links/app_links.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -19,7 +22,7 @@ late final AppLinks _appLinks;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  MapboxOptions.setAccessToken(kMapboxToken);
   try {
     // ✅ Load environment variables
     await dotenv.load(fileName: ".env");
@@ -37,7 +40,7 @@ Future<void> main() async {
     Get.put(RideController(), permanent: true);
 
     // (Optional) set test user for dev
-    UserService.setTestUser();
+   // UserService.setTestUser();
 
     // ✅ Listen for auth events
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
@@ -99,7 +102,7 @@ Future<void> main() async {
         Get.snackbar("Error", "Invalid deep link.");
       },
     );
-
+      
     runApp(const CarpoolApp());
   } catch (e, st) {
     debugPrint("❌ Fatal error during app init: $e\n$st");

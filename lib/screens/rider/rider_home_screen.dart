@@ -5,6 +5,7 @@ import 'messages_screen.dart';
 import 'profile_screen.dart';
 
 class RiderHomeScreen extends StatefulWidget {
+  //final String title;
   const RiderHomeScreen({super.key});
 
   @override
@@ -22,7 +23,8 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     super.initState();
     _screens = [
       _RidesScreenWrapper(controller: rideController),
-      const MessagesScreen(),
+      //const MessagesScreen(),
+      const RiderProfileScreen(),
       const RiderProfileScreen(),
     ];
   }
@@ -178,7 +180,7 @@ class _RidesScreenWrapper extends StatelessWidget {
                       trailing: ElevatedButton(
                         onPressed: () async {
                           try {
-                            await controller.requestRide(ride.id);
+                            await controller.requestRide(ride.id.toString());
                             Get.snackbar("Request Sent",
                                 "Ride request submitted ✅",
                                 backgroundColor: Colors.green.shade50,

@@ -1,75 +1,51 @@
 // lib/services/user_service.dart
-
-class DummyUser {
-  final String id;
-  final String name;
-  final String role; // 'Rider' or 'Carpooler'
-  final String email;
-  final String password;
-
-  DummyUser({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.email,
-    required this.password,
-  });
-}
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserService {
-  static DummyUser? _currentUser;
+  static final _supabase = Supabase.instance.client;
 
-  static DummyUser get currentUser => _currentUser!;
-  
-  static List<DummyUser> dummyUsers = [
-  DummyUser(
-    id: '1',
-    name: 'Ali Rider',
-    role: 'Rider',
-    email: 'rider@example.com',
-    password: 'rider123',
-  ),
-  DummyUser(
-    id: '2',
-    name: 'Ahmed Driver',
-    role: 'Carpooler',
-    email: 'driver@example.com',
-    password: 'driver123',
-  ),
-  DummyUser(
-    id: '2',
-    name: 'Ahmed Driver',
-    role: 'Rider',
-    email: 'rider2@example.com',
-    password: 'driver123',
-    
-  ),
-];
-  static DummyUser? authenticate(String email, String password) {
-  try {
-    return dummyUsers.firstWhere(
-      (u) => u.email == email && u.password == password,
-    );
-  } catch (_) {
-    return null;
-  }
-}
-static void setTestUser() {
-  if (_currentUser == null) {
-    // Pick a driver user to match mock ride driver IDs
-    _currentUser = dummyUsers.firstWhere((u) => u.role == 'Carpooler');
-  }
-}
-  static void login(DummyUser user) {
-    _currentUser = user;
+  // ===== Current user =====
+  static User? get currentUser => _supabase.auth.currentUser;
+
+  static bool isLoggedIn() => _supabase.auth.currentUser != null;
+
+  static Future<void> logout() async {
+    await _supabase.auth.signOut();
   }
 
+  // ===== Authenticate (Login) =====
+  static Future<User?> authenticate(String email, String password) async {
+    try {
+      final res = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
 
-  static void logout() {
-    _currentUser = null;
+      return res.user; // returns Supabase user on success
+    } catch (e) {
+      return null; // return null if auth fails
+    }
   }
-  
-  static bool isLoggedIn() {
-    return _currentUser != null;
+
+  // ===== Register new user =====
+  static Future<User?> register(String email, String password) async {
+    try {
+      final res = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+      return res.user;
+    } catch (e) {
+      return null;
+    }
   }
+
+  // ===== Helpers =====
+  static String get currentUserId => _supabase.auth.currentUser?.id ?? '';
+
+  static String get currentUserEmail =>
+      _supabase.auth.currentUser?.email ?? '';
+
+  static Map<String, dynamic> get currentUserMetadata =>
+      _supabase.auth.currentUser?.userMetadata ?? {};
 }

@@ -1,4 +1,4 @@
-// lib/services/chat_service.dart
+/* // lib/services/chat_service.dart
 
 import 'package:carpool_connect/services/user_service.dart';
 
@@ -116,3 +116,4 @@ static void startChatIfNeeded(String user1Id, String user2Id) {
     }
   } */
 }
+ */

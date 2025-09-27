@@ -149,7 +149,7 @@ class RideController extends GetxController {
     }
   }
 
-  Future<void> respondToRequest(String rideId, String passengerId, bool accept) async {
+  Future<void> respondToRequest(int rideId, String passengerId, bool accept) async {
   final newStatus = accept ? 'accepted' : 'rejected';
 
   try {

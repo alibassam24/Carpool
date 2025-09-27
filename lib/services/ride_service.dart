@@ -1,63 +1,78 @@
+// lib/services/ride_service.dart
 import 'dart:async';
-import 'package:uuid/uuid.dart';
-import 'package:carpool_connect/models/ride_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/ride_model.dart';
+import '../core/result.dart';
 
 class RideService {
-  static final List<Ride> _rides = [];
+  final SupabaseClient _sb = Supabase.instance.client;
 
-  /// create a ride (simulates network delay)
-  static Future<Ride> createRide(Ride ride) async {
-    await Future.delayed(const Duration(seconds: 1)); // simulate network
-    _rides.add(ride);
-    return ride;
+  /// 🔎 Fetch rides from Supabase
+  Future<Result<List<Ride>>> fetchRides({
+    int limit = 50,
+    String status = 'active',
+  }) async {
+    try {
+      final rows = await _sb
+          .from('rides')
+          .select()
+          .eq('status', status)
+          .order('date_time', ascending: true)
+          .limit(limit);
+
+      final rides = (rows as List<dynamic>)
+          .map((row) => Ride.fromMap(Map<String, dynamic>.from(row)))
+          .toList();
+
+      return Result.ok(rides);
+    } catch (e) {
+      return Result.err(AppFailure('fetch_failed', e.toString()));
+    }
   }
 
-  /// get list of rides (most recent first)
-  static List<Ride> getRides() {
-    return _rides.reversed.toList();
+  /// 📡 Stream realtime updates for rides
+  Stream<List<Ride>> streamRides({String status = 'active'}) {
+    return _sb
+        .from('rides')
+        .stream(primaryKey: ['id'])
+        .eq('status', status)
+        .order('date_time')
+        .map((rows) =>
+            rows.map((r) => Ride.fromMap(Map<String, dynamic>.from(r))).toList());
   }
 
-  /// convenience factory for building a Ride object
-  /* static Ride buildRide({
-    required String createdBy,
-    required String origin,
-    required String destination,
-    required DateTime when,
-    required int seats,
-    double? price,
-    String genderPreference = "",
-    String notes = "",
-  }) {
-    return Ride(
-      id: const Uuid().v4(),
-      origin: origin,
-      destination: destination,
-      when: when,
-      seats: seats,
-      driverId: createdBy,
-    );
-  } */
- static Ride buildRide({
-  required String createdBy,
-  required String origin,
-  required String destination,
-  required DateTime when,
-  required int seats,
-  double? price,
-  String genderPreference = "Any",
-  String notes = "",
-  List<RideRequest>? requests, // optional initial requests
-}) {
-  return Ride(
-    id: const Uuid().v4(),
-    origin: origin,
-    destination: destination,
-    seats: seats,
-    when: when,
-    carpoolerId: createdBy,
-    genderPreference: genderPreference,
-    requests: requests ?? [], // initialize as empty list if null
-  );
-}
+  /// 📝 Create a ride in Supabase
+  Future<Result<Ride>> createRide(Ride ride) async {
+    try {
+      final row = await _sb.from('rides').insert({
+        'carpooler_id': ride.carpoolerId,
+        'origin_text': ride.origin,
+        'origin_lat': ride.originLat,
+        'origin_lng': ride.originLng,
+        'destination_text': ride.destination,
+        'destination_lat': ride.destinationLat,
+        'destination_lng': ride.destinationLng,
+        'passenger_count': ride.seats,
+        'date_time': ride.when.toIso8601String(),
+        'price': ride.price,
+        'gender_preference': ride.genderPreference,
+        'notes': ride.notes,
+        'status': 'active',
+      }).select().single();
 
+      return Result.ok(Ride.fromMap(Map<String, dynamic>.from(row)));
+    } catch (e) {
+      return Result.err(AppFailure('create_failed', e.toString()));
+    }
+  }
+
+  /// ❌ Cancel a ride (soft delete)
+  Future<Result<void>> cancelRide(int rideId) async {
+    try {
+      await _sb.from('rides').update({'status': 'cancelled'}).eq('id', rideId);
+      return Result.ok(null);
+    } catch (e) {
+      return Result.err(AppFailure('cancel_failed', e.toString()));
+    }
+  }
 }

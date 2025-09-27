@@ -1,4 +1,4 @@
-import 'package:carpool_connect/screens/rider/chat_screen.dart';
+/* import 'package:carpool_connect/screens/rider/chat_screen.dart';
 import 'package:carpool_connect/services/chat_service.dart';
 import 'package:carpool_connect/services/user_service.dart';
 import 'package:flutter/material.dart';
@@ -282,3 +282,4 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return userId.hashCode % 2 == 0; // mock logic
   }
 }
+ */

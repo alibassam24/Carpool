@@ -1,11 +1,14 @@
 import 'package:carpool_connect/models/ride_model.dart';
+import 'package:carpool_connect/services/ride_service.dart';
+import 'package:carpool_connect/controllers/ride_controller.dart';
+import 'package:carpool_connect/screens/carpooler/map_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../services/ride_service.dart';
-import '../controllers/ride_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateRideWidget extends StatefulWidget {
   final String currentUserId;
+  
   final void Function(Ride createdRide)? onCreated;
 
   const CreateRideWidget({
@@ -21,16 +24,23 @@ class CreateRideWidget extends StatefulWidget {
 class _CreateRideWidgetState extends State<CreateRideWidget>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _originCtl = TextEditingController();
-  final _destinationCtl = TextEditingController();
   final _notesCtl = TextEditingController();
   final _priceCtl = TextEditingController();
   final RideController rideController = Get.find<RideController>();
 
   DateTime? _selectedDateTime;
   int _seats = 1;
-  String _genderPref = 'No preference';
+  String _genderPref = 'any';
   bool _isSubmitting = false;
+
+  // store text + coordinates
+  String? _originText;
+  double? _originLat;
+  double? _originLng;
+
+  String? _destText;
+  double? _destLat;
+  double? _destLng;
 
   late final AnimationController _animController;
   late final Animation<Offset> _offsetAnim;
@@ -54,8 +64,6 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
   @override
   void dispose() {
     _animController.dispose();
-    _originCtl.dispose();
-    _destinationCtl.dispose();
     _notesCtl.dispose();
     _priceCtl.dispose();
     super.dispose();
@@ -63,45 +71,64 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (pickedDate == null) return;
 
-    try {
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: now,
-        firstDate: now,
-        lastDate: now.add(const Duration(days: 365)),
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (pickedTime == null) return;
+
+    setState(() {
+      _selectedDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
       );
-      if (pickedDate == null) return;
+    });
+  }
 
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (pickedTime == null) return;
+  Future<void> _pickLocation(bool isOrigin) async {
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          title: isOrigin ? "Pick Origin" : "Pick Destination",
+        ),
+      ),
+    );
 
-      setState(() {
-        _selectedDateTime = DateTime(
-          pickedDate.year,
-          pickedDate.month,
-          pickedDate.day,
-          pickedTime.hour,
-          pickedTime.minute,
-        );
-      });
-    } catch (e) {
-      debugPrint("❌ Date/Time picker failed: $e");
-      Get.snackbar("Error", "Failed to pick date & time");
-    }
+    if (result == null) return;
+
+    setState(() {
+      if (isOrigin) {
+        _originText = result['name'] ?? "${result['lat']}, ${result['lng']}";
+        _originLat = result['lat'];
+        _originLng = result['lng'];
+      } else {
+        _destText = result['name'] ?? "${result['lat']}, ${result['lng']}";
+        _destLat = result['lat'];
+        _destLng = result['lng'];
+      }
+    });
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
     if (_selectedDateTime == null) {
       Get.snackbar("Validation", "Please select a date & time");
       return;
     }
-
+    if (_originText == null || _destText == null) {
+      Get.snackbar("Validation", "Please select both origin and destination");
+      return;
+    }
     if (_seats < 1 || _seats > 10) {
       Get.snackbar("Validation", "Seats must be between 1 and 10");
       return;
@@ -111,48 +138,43 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
 
     try {
       final price = double.tryParse(_priceCtl.text.trim());
-      if (_priceCtl.text.trim().isNotEmpty && price == null) {
-        throw "Invalid price entered";
-      }
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      final ride = Ride(
+        //id: 0, // Supabase will assign
+        carpoolerId: userId!,
+        origin: _originText!,
+        destination: _destText!,
+        originLat: _originLat,
 
-      final ride = RideService.buildRide(
-        createdBy: widget.currentUserId,
-        origin: _originCtl.text.trim(),
-        destination: _destinationCtl.text.trim(),
+        originLng: _originLng,
+        destinationLat: _destLat,
+        destinationLng: _destLng,
         when: _selectedDateTime!,
         seats: _seats,
         price: price,
         genderPreference: _genderPref,
-        notes: _notesCtl.text.trim(),
+        notes: _notesCtl.text.trim().isEmpty ? null : _notesCtl.text.trim(),
       );
 
-      final created = await RideService.createRide(ride);
+      final result = await RideService().createRide(ride);
 
-      // instant UI update
-      rideController.addRide(created);
-      widget.onCreated?.call(created);
-
-      if (!mounted) return;
-      Get.snackbar(
-        "Success",
-        "Ride created successfully ✅",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF255A45),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(12),
-        borderRadius: 12,
-      );
-
-      Navigator.of(context).pop();
-    } catch (e, st) {
-      debugPrint("❌ Create ride failed: $e\n$st");
-      if (!mounted) return;
-      Get.snackbar(
-        "Error",
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade50,
-        colorText: Colors.black87,
+      // ✅ handle Result<T>
+      result.when(
+        ok: (rideObj) {
+          rideController.addRide(rideObj);
+          widget.onCreated?.call(rideObj);
+          Navigator.of(context).pop();
+          Get.snackbar("Success", "Ride created successfully ✅",
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: const Color(0xFF255A45),
+              colorText: Colors.white);
+        },
+        err: (f) {
+          Get.snackbar("Error", f.message,
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.red.shade50,
+              colorText: Colors.black87);
+        },
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -184,13 +206,7 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 12,
-                offset: Offset(0, -2),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, -2))],
           ),
           child: Padding(
             padding: EdgeInsets.only(
@@ -201,28 +217,12 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
             ),
             child: Column(
               children: [
-                Center(
-                  child: Container(
-                    height: 5,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "Create Carpool Ride 🚗",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: brandPrimary,
-                      ),
-                    ),
+                    const Text("Create Carpool Ride 🚗",
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: brandPrimary)),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.black54),
                       onPressed: () => Navigator.of(context).pop(),
@@ -237,67 +237,46 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
                       key: _formKey,
                       child: Column(
                         children: [
-                          TextFormField(
-                            controller: _originCtl,
-                            decoration:
-                                _inputDecoration("Origin", Icons.location_on),
-                            validator: (v) =>
-                                v == null || v.trim().isEmpty ? "Origin required" : null,
+                          ListTile(
+                            leading: const Icon(Icons.location_on, color: brandPrimary),
+                            title: Text(_originText ?? "Select Origin"),
+                            onTap: () => _pickLocation(true),
                           ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _destinationCtl,
-                            decoration:
-                                _inputDecoration("Destination", Icons.flag),
-                            validator: (v) =>
-                                v == null || v.trim().isEmpty ? "Destination required" : null,
+                          const Divider(),
+                          ListTile(
+                            leading: const Icon(Icons.flag, color: brandPrimary),
+                            title: Text(_destText ?? "Select Destination"),
+                            onTap: () => _pickLocation(false),
                           ),
-                          const SizedBox(height: 12),
-                          GestureDetector(
+                          const Divider(),
+                          ListTile(
+                            leading: const Icon(Icons.access_time, color: brandPrimary),
+                            title: Text(_selectedDateTime == null
+                                ? "Choose Date & Time"
+                                : _selectedDateTime!.toLocal().toString()),
                             onTap: _pickDateTime,
-                            child: AbsorbPointer(
-                              child: TextFormField(
-                                decoration: _inputDecoration(
-                                  "Date & Time",
-                                  Icons.access_time,
-                                ).copyWith(
-                                  hintText: _selectedDateTime == null
-                                      ? "Choose date & time"
-                                      : "${_selectedDateTime!.toLocal()}",
-                                ),
-                              ),
-                            ),
                           ),
                           const SizedBox(height: 12),
+                          // seats
                           Row(
                             children: [
                               Expanded(
                                 child: InputDecorator(
-                                  decoration:
-                                      _inputDecoration("Seats", Icons.event_seat),
+                                  decoration: _inputDecoration("Seats", Icons.event_seat),
                                   child: Row(
                                     children: [
                                       IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline, color: brandPrimary),
                                         onPressed: () {
-                                          if (_seats > 1) {
-                                            setState(() => _seats--);
-                                          }
+                                          if (_seats > 1) setState(() => _seats--);
                                         },
-                                        icon: const Icon(Icons.remove_circle_outline,
-                                            color: brandPrimary),
                                       ),
-                                      Text("$_seats",
-                                          style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500)),
+                                      Text("$_seats"),
                                       IconButton(
+                                        icon: const Icon(Icons.add_circle_outline, color: brandPrimary),
                                         onPressed: () {
-                                          if (_seats < 10) {
-                                            setState(() => _seats++);
-                                          }
+                                          if (_seats < 10) setState(() => _seats++);
                                         },
-                                        icon: const Icon(Icons.add_circle_outline,
-                                            color: brandPrimary),
                                       ),
                                       const Spacer(),
                                       const Text("Max 10"),
@@ -311,39 +290,25 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
                           TextFormField(
                             controller: _priceCtl,
                             keyboardType: TextInputType.number,
-                            decoration: _inputDecoration(
-                              "Suggested Price (optional)",
-                              Icons.attach_money,
-                            ),
+                            decoration: _inputDecoration("Suggested Price (optional)", Icons.attach_money),
                           ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
                             value: _genderPref,
-                            decoration: _inputDecoration(
-                                "Gender preference", Icons.person_outline),
+                            decoration: _inputDecoration("Gender Preference", Icons.person_outline),
                             items: const [
-                              DropdownMenuItem(
-                                  value: "No preference",
-                                  child: Text("No preference")),
-                              DropdownMenuItem(
-                                  value: "Male only", child: Text("Male only")),
-                              DropdownMenuItem(
-                                  value: "Female only",
-                                  child: Text("Female only")),
+                              DropdownMenuItem(value: "any", child: Text("No preference")),
+                              DropdownMenuItem(value: "male", child: Text("Male only")),
+                              DropdownMenuItem(value: "female", child: Text("Female only")),
                             ],
-                            onChanged: (v) =>
-                                setState(() => _genderPref = v ?? "No preference"),
+                            onChanged: (v) => setState(() => _genderPref = v ?? "No preference"),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _notesCtl,
                             maxLines: 3,
-                            decoration: _inputDecoration(
-                              "Notes (optional)",
-                              Icons.note_outlined,
-                            ).copyWith(
-                              hintText: "Any details for passengers",
-                            ),
+                            decoration: _inputDecoration("Notes (optional)", Icons.note_outlined)
+                                .copyWith(hintText: "Any details for passengers"),
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -357,25 +322,11 @@ class _CreateRideWidgetState extends State<CreateRideWidget>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 6,
-                    shadowColor: brandPrimary.withOpacity(0.4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Text(
-                          "Post Ride",
-                          style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
+                      ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      : const Text("Post Ride", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ],
             ),

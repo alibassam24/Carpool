@@ -34,7 +34,8 @@ dependencies:
     sdk: flutter
   supabase_flutter: ^2.10.1
   image_picker: ^1.1.2
-
+  mapbox_maps_flutter: ^2.11.0
+  http: ^1.1.0
   flutter_dotenv: ^5.1.0
  # State Management & Navigation
   get: ^4.6.6
@@ -74,6 +75,7 @@ flutter:
     - assets/images/
     - assets/animations/verified.json
     - assets/animations/success.json
+    - assets/images/marker.png
     - .env  
    # - assets/images/logo2.png
   # The following line ensures that the Material Icons font is

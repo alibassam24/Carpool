@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/* import 'package:flutter/material.dart';
 import '../../services/chat_service.dart';
 import '../../services/user_service.dart';
 
@@ -167,4 +167,4 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 }
 //add seen/ delivered
 //typing indicator
-//message timestamps
+//message timestamps */

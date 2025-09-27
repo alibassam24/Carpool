@@ -20,8 +20,18 @@
 </array>
 
 
+<key>io.flutter.embedded_views_preview</key>
+<true/>
 
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We use your location to show rides near you.</string>
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>We use your location to provide live ride tracking.</string>
+<key>NSLocationAlwaysUsageDescription</key>
+<string>We use your location to provide ride tracking even if the app is minimized.</string>
 
+<key>MBXAccessToken</key>
+<string>pk.eyJ1IjoiYWxpYmFzc2FtMiIsImEiOiJjbWZ4em43N2EwYzM3MnFzZmJiaDFvaTF0In0.nPYkSAGLMpToqI883WZVig</string>
 
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

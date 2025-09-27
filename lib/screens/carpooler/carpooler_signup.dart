@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:get/get.dart';
-
-final box = GetStorage();
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ExtendedCarpoolerSignupScreen extends StatefulWidget {
   const ExtendedCarpoolerSignupScreen({super.key});
@@ -18,6 +16,7 @@ class _ExtendedCarpoolerSignupScreenState
     extends State<ExtendedCarpoolerSignupScreen> {
   int _currentStep = 0;
   final ImagePicker _picker = ImagePicker();
+  final _sb = Supabase.instance.client;
 
   XFile? _licenseImage;
   XFile? _carNumberImage;
@@ -31,7 +30,7 @@ class _ExtendedCarpoolerSignupScreenState
     if (image != null) {
       onImagePicked(image);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Image uploaded successfully')),
+        const SnackBar(content: Text('✅ Image selected')),
       );
     }
   }
@@ -48,13 +47,8 @@ class _ExtendedCarpoolerSignupScreenState
     if (_currentStep > 0) {
       setState(() => _currentStep -= 1);
     } else {
-      // If at first step, cancel goes back to role selection
-      _goToChooseRole();
+      Get.offAllNamed('/roles');
     }
-  }
-
-  void _goToChooseRole() {
-    Get.offAllNamed('/roles');
   }
 
   Future<void> _submitForm() async {
@@ -70,14 +64,52 @@ class _ExtendedCarpoolerSignupScreenState
 
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+    try {
+      final user = _sb.auth.currentUser;
+      if (user == null) throw "Not logged in";
 
-    box.write('carpoolerStatus', 'pending');
+      /// Upload files to Supabase Storage
+      Future<String> uploadFile(XFile file, String docType) async {
+        final fileExt = file.path.split('.').last;
+        final path = "${user.id}/$docType.$fileExt";
+        await _sb.storage.from('driver_docs').upload(path, File(file.path),
+            fileOptions: const FileOptions(upsert: true));
+        return path;
+      }
 
-    setState(() => _isSubmitting = false);
+      final licensePath = await uploadFile(_licenseImage!, "license");
+      final platePath = await uploadFile(_carNumberImage!, "car_plate");
+      final cnicFrontPath = await uploadFile(_cnicFrontImage!, "cnic_front");
+      final cnicBackPath = await uploadFile(_cnicBackImage!, "cnic_back");
 
-    Get.offAllNamed('/verification_pending');
+      /// Insert into driver_documents table
+      await _sb.from('driver_documents').upsert({
+        'user_id': user.id,
+        'license_url': licensePath,
+        'car_plate_url': platePath,
+        'cnic_front_url': cnicFrontPath,
+        'cnic_back_url': cnicBackPath,
+        'status': 'pending',
+        'submitted_at': DateTime.now().toIso8601String(),
+      });
+
+      /// Update users table → role + status
+      await _sb.from('users').update({
+        'role': 'carpooler',
+        'status': 'pending',
+      }).eq('id', user.id);
+
+      if (!mounted) return;
+      Get.offAllNamed('/verification_pending');
+    } catch (e, st) {
+      debugPrint("❌ Submit failed: $e\n$st");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Failed: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Widget _uploadCard(String label, XFile? file, VoidCallback onTap) {
@@ -115,9 +147,8 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _licenseImage = file)),
         ),
         isActive: _currentStep >= 0,
-        state: _licenseImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state:
+            _licenseImage != null ? StepState.complete : StepState.indexed,
       ),
       Step(
         title: const Text('Car Number Plate'),
@@ -127,9 +158,8 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _carNumberImage = file)),
         ),
         isActive: _currentStep >= 1,
-        state: _carNumberImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state:
+            _carNumberImage != null ? StepState.complete : StepState.indexed,
       ),
       Step(
         title: const Text('CNIC Front'),
@@ -139,9 +169,8 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _cnicFrontImage = file)),
         ),
         isActive: _currentStep >= 2,
-        state: _cnicFrontImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state:
+            _cnicFrontImage != null ? StepState.complete : StepState.indexed,
       ),
       Step(
         title: const Text('CNIC Back'),
@@ -151,92 +180,60 @@ class _ExtendedCarpoolerSignupScreenState
           () => _pickImage((file) => setState(() => _cnicBackImage = file)),
         ),
         isActive: _currentStep >= 3,
-        state: _cnicBackImage != null
-            ? StepState.complete
-            : StepState.indexed,
+        state:
+            _cnicBackImage != null ? StepState.complete : StepState.indexed,
       ),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_currentStep > 0) {
-          setState(() => _currentStep -= 1);
-        } else {
-          _goToChooseRole();
-        }
-        return false; // Prevent default pop
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFAF9F6),
-        appBar: AppBar(
-          title: const Text('Carpooler Signup'),
-          backgroundColor: const Color(0xFF255A45),
-          foregroundColor: Colors.white,
-          actions: [
-            TextButton(
-              onPressed: _goToChooseRole,
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white),
-              ),
-            )
-          ],
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF9F6),
+      appBar: AppBar(
+        title: const Text('Carpooler Signup'),
+        backgroundColor: const Color(0xFF255A45),
+        foregroundColor: Colors.white,
+      ),
+      body: Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFF255A45)),
         ),
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme:
-                  ColorScheme.light(primary: const Color(0xFF255A45)),
-            ),
-            child: Column(
+        child: Stepper(
+          type: StepperType.vertical,
+          currentStep: _currentStep,
+          onStepContinue: _isSubmitting ? null : _onStepContinue,
+          onStepCancel: _isSubmitting ? null : _onStepCancel,
+          controlsBuilder: (context, details) {
+            return Row(
               children: [
-                Stepper(
-                  type: StepperType.vertical,
-                  currentStep: _currentStep,
-                  onStepContinue: _isSubmitting ? null : _onStepContinue,
-                  onStepCancel: _isSubmitting ? null : _onStepCancel,
-                  onStepTapped: (index) =>
-                      setState(() => _currentStep = index),
-                  controlsBuilder: (context, details) {
-                    return Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: details.onStepContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF255A45),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
-                                )
-                              : Text(_currentStep ==
-                                      _buildSteps().length - 1
-                                  ? 'Submit'
-                                  : 'Next'),
-                        ),
-                        const SizedBox(width: 10),
-                        if (_currentStep > 0)
-                          TextButton(
-                            onPressed: details.onStepCancel,
-                            child: const Text('Back'),
-                          ),
-                      ],
-                    );
-                  },
-                  steps: _buildSteps(),
+                ElevatedButton(
+                  onPressed: details.onStepContinue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF255A45),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(_currentStep == _buildSteps().length - 1
+                          ? 'Submit'
+                          : 'Next'),
                 ),
+                const SizedBox(width: 10),
+                if (_currentStep > 0)
+                  TextButton(
+                    onPressed: details.onStepCancel,
+                    child: const Text('Back'),
+                  ),
               ],
-            ),
-          ),
+            );
+          },
+          steps: _buildSteps(),
         ),
       ),
     );

@@ -30,3 +30,11 @@ subprojects {
         }
     }
 }
+
+if (name == "mapbox_maps_flutter") {
+        plugins.withId("com.android.library") {
+            extensions.configure<com.android.build.gradle.LibraryExtension> {
+                namespace = "com.mapbox.maps.flutter"
+            }
+        }
+    }

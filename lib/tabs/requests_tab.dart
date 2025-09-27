@@ -161,7 +161,7 @@ class _RequestCard extends StatelessWidget {
                         tooltip: "Accept",
                         onPressed: () {
                           rideController.respondToRequest(
-                              item.ride.id, item.request.passengerId, true);
+                              item.ride.id!, item.request.passengerId, true);
                           onUpdate();
                         },
                       ),
@@ -170,7 +170,7 @@ class _RequestCard extends StatelessWidget {
                         tooltip: "Reject",
                         onPressed: () {
                           rideController.respondToRequest(
-                             item.ride.id, item.request.passengerId, false);
+                             item.ride.id!, item.request.passengerId, false);
                           onUpdate();
                         },
                       ),
